@@ -1,0 +1,59 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Admin check - bootstrapping with provided email
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.email == "anuja9jaa123@gmail.com";
+    }
+
+    // Employee Validation
+    function isValidEmployee(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 200
+        && data.postAppliedFor is string
+        && data.department is string
+        && (data.status == "active" || data.status == "inactive");
+    }
+
+    // Non-Employee / Candidate Validation
+    function isValidNonEmployee(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 200
+        && data.postAppliedFor is string;
+    }
+
+    match /employees/{employeeId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(employeeId) && isValidEmployee(incoming());
+      allow update: if isSignedIn() && isValidEmployee(incoming());
+      allow delete: if isAdmin();
+    }
+
+    match /non_employees/{candidateId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(candidateId) && isValidNonEmployee(incoming());
+      allow update: if isSignedIn() && isValidNonEmployee(incoming());
+      allow delete: if isAdmin();
+    }
+  }
+}

@@ -1,0 +1,174 @@
+{
+  "entities": {
+    "employee": {
+      "title": "Employee",
+      "description": "The main employee record containing both bio-data and office details.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Employee full name" },
+        "postAppliedFor": { "type": "string" },
+        "jobProcessAssigned": { "type": "string", "description": "Specific job or process assigned to the worker" },
+        "department": { "type": "string" },
+        "fatherHusbandName": { "type": "string" },
+        "dob": { "type": "string", "format": "date" },
+        "age": { "type": "integer" },
+        "qualification": { "type": "string" },
+        "technicalQualification": { "type": "string" },
+        "reference": { "type": "string" },
+        "languages": {
+          "type": "object",
+          "properties": {
+            "hindi": { "$ref": "#/entities/LanguageSkill" },
+            "english": { "$ref": "#/entities/LanguageSkill" },
+            "punjabi": { "$ref": "#/entities/LanguageSkill" },
+            "other": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "skill": { "$ref": "#/entities/LanguageSkill" }
+              }
+            }
+          }
+        },
+        "contactNo": { "type": "string" },
+        "alternateContactNo": { "type": "string" },
+        "employeeCode": { "type": "string" },
+        "experience": { "type": "string" },
+        "category": { "type": "string", "enum": ["Staff", "Worker", "PC Rate"] },
+        "dutyTime": { "type": "string" },
+        "dutyHours": { "type": "string" },
+        "shiftTime": { "type": "string" },
+        "teaTimeAllowed": { "type": "string" },
+        "teaBreak1": { "type": "string" },
+        "teaBreak2": { "type": "string" },
+        "lunchBreak": { "type": "string" },
+        "shiftHours": { "type": "string", "enum": ["8", "9", "10", "12", "13"] },
+        "overtimeAllowed": { "type": "boolean" },
+        "overtimeHours": { "type": "string" },
+        "dateOfJoining": { "type": "string", "format": "date" },
+        "dateOfLeaving": { "type": "string", "format": "date" },
+        "esi": { "type": "string" },
+        "pf": { "type": "string" },
+        "uan": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "inactive"] },
+        "nominee": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "relation": { "type": "string" },
+            "age": { "type": "integer" },
+            "dob": { "type": "string", "format": "date" }
+          }
+        },
+        "family": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "relation": { "type": "string" },
+              "age": { "type": "integer" },
+              "dob": { "type": "string", "format": "date" },
+              "mobileNumber": { "type": "string" }
+            }
+          }
+        },
+        "officeUse": {
+          "type": "object",
+          "properties": {
+            "basicPay": { "type": "number" },
+            "esiEmployee": { "type": "number" },
+            "pfEmployee": { "type": "number" },
+            "applyEsi": { "type": "boolean" },
+            "applyPf": { "type": "boolean" },
+            "applyLwf": { "type": "boolean" },
+            "applyLww": { "type": "boolean" },
+            "esiEmployer": { "type": "number" },
+            "pfEmployer": { "type": "number" },
+            "bonus": { "type": "number" },
+            "lwwAllowed": { "type": "number" },
+            "lwwAmount": { "type": "number" },
+            "lwfEmployer": { "type": "number" },
+            "lwfEmployee": { "type": "number" },
+            "ctc": { "type": "number" },
+            "netCash": { "type": "number" },
+            "remarks": { "type": "string" }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "postAppliedFor", "department"]
+    },
+    "LanguageSkill": {
+      "title": "LanguageSkill",
+      "description": "Proficiency in reading, writing and speaking a language.",
+      "type": "object",
+      "properties": {
+        "read": { "type": "boolean" },
+        "write": { "type": "boolean" },
+        "speak": { "type": "boolean" }
+      }
+    },
+    "non_employee": {
+      "title": "NonEmployee",
+      "description": "Job applicant and employee query database record.",
+      "type": "object",
+      "properties": {
+        "srNo": { "type": "string" },
+        "category": { "type": "string", "enum": ["Staff", "Worker", "PC Rate"] },
+        "name": { "type": "string" },
+        "fatherName": { "type": "string" },
+        "contactNumber": { "type": "string" },
+        "alternateContact": { "type": "string" },
+        "reference": { "type": "string" },
+        "postAppliedFor": { "type": "string" },
+        "dateOfApplication": { "type": "string", "format": "date" },
+        "qualification": { "type": "string" },
+        "specialSkills": { "type": "string" },
+        "computerKnowledge": { "type": "string" },
+        "experience": { "type": "string" },
+        "currentSalary": { "type": "number" },
+        "otherPerks": { "type": "string" },
+        "calledForInterview": { "type": "boolean" },
+        "interviewDate": { "type": "string", "format": "date" },
+        "interviewTakenBy": { "type": "string" },
+        "resultOfInterview": { "type": "string" },
+        "remarks": { "type": "string" },
+        "offeredToJoin": { "type": "boolean" },
+        "salaryDetails": {
+          "type": "object",
+          "properties": {
+            "finalSalary": { "type": "number" },
+            "esi": { "type": "number" },
+            "esiEmployer": { "type": "number" },
+            "pf": { "type": "number" },
+            "pfEmployer": { "type": "number" },
+            "profTax": { "type": "number" },
+            "lww": { "type": "number" },
+            "lwf": { "type": "number" },
+            "lwfEmployer": { "type": "number" },
+            "applyEsi": { "type": "boolean" },
+            "applyPf": { "type": "boolean" },
+            "applyLwf": { "type": "boolean" },
+            "ctc": { "type": "number" },
+            "netCashTakeHome": { "type": "number" }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "postAppliedFor"]
+    }
+  },
+  "firestore": {
+    "/employees/{employeeId}": {
+      "schema": "employee",
+      "description": "Collection of employee bio-data records."
+    },
+    "/non_employees/{candidateId}": {
+      "schema": "non_employee",
+      "description": "Collection of candidate query and non-employee database records."
+    }
+  }
+}
