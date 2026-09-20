@@ -1,7 +1,6 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { supabase } from '@/lib/supabase';
 import { NonEmployee } from '@/types';
 import { NonEmployeeForm } from './NonEmployeeForm';
 import { Button } from '@/components/ui/button';
@@ -18,9 +17,9 @@ export function EditNonEmployee() {
     async function loadData() {
       if (!id) return;
       try {
-        const snap = await getDoc(doc(db, 'non_employees', id));
-        if (snap.exists()) {
-          setCandidate({ id: snap.id, ...snap.data() } as NonEmployee);
+        const { data: row, error } = await supabase.from('non_employees').select('id, data').eq('id', id).single();
+        if (row && !error) {
+          setCandidate({ id: row.id, ...row.data } as NonEmployee);
         } else {
           toast.error('RECORD_NOT_FOUND');
           navigate('/employees?tab=queries');

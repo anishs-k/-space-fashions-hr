@@ -1,7 +1,6 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { supabase } from '@/lib/supabase';
 import { Employee } from '@/types';
 import { EmployeeForm } from './EmployeeForm';
 import { EmployeeBioData } from './EmployeeBioData';
@@ -21,11 +20,10 @@ export function EditEmployee() {
       if (!id) return;
       
       try {
-        const docRef = doc(db, 'employees', id);
-        const docSnap = await getDoc(docRef);
-        
-        if (docSnap.exists()) {
-          setEmployee({ id: docSnap.id, ...docSnap.data() } as Employee);
+        const { data: row, error } = await supabase.from('employees').select('id, data').eq('id', id).single();
+
+        if (row && !error) {
+          setEmployee({ id: row.id, ...row.data } as Employee);
         } else {
           toast.error('EMPLOYEE_NOT_FOUND');
           navigate('/employees');

@@ -1,5 +1,4 @@
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from './firebase';
+import { supabase } from './supabase';
 
 export const pdfSeedData = [
    {
@@ -389,19 +388,19 @@ export const nonEmployeeSeedData = [
 ];
 
 export async function seedDatabase() {
-  for (const emp of pdfSeedData) {
-    await setDoc(doc(db, 'employees', emp.id), {
-      ...emp,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    });
-  }
+  const now = new Date().toISOString();
 
-  for (const nonEmp of nonEmployeeSeedData) {
-    await setDoc(doc(db, 'non_employees', nonEmp.id), {
-      ...nonEmp,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    });
-  }
+  const employeeRows = pdfSeedData.map(({ id, ...rest }) => ({
+    id,
+    data: { ...rest, createdAt: now, updatedAt: now },
+  }));
+  const { error: empError } = await supabase.from('employees').upsert(employeeRows);
+  if (empError) throw empError;
+
+  const nonEmployeeRows = nonEmployeeSeedData.map(({ id, ...rest }) => ({
+    id,
+    data: { ...rest, createdAt: now, updatedAt: now },
+  }));
+  const { error: nonEmpError } = await supabase.from('non_employees').upsert(nonEmployeeRows);
+  if (nonEmpError) throw nonEmpError;
 }

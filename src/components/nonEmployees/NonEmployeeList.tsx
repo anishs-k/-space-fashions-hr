@@ -1,6 +1,5 @@
 import React from 'react';
-import { collection, query, onSnapshot, orderBy, doc, deleteDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { supabase } from '@/lib/supabase';
 import { NonEmployee } from '@/types';
 import { 
   Table, 
@@ -46,28 +45,42 @@ export function NonEmployeeList({ onSelectCandidate, onConvertToEmployee }: NonE
   const [viewingCandidate, setViewingCandidate] = React.useState<NonEmployee | null>(null);
 
   React.useEffect(() => {
-    const q = query(collection(db, 'non_employees'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const docs = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as NonEmployee));
-      setCandidates(docs);
-      setLoading(false);
-    }, (error) => {
-      console.error(error);
-      setLoading(false);
-    });
+    let mounted = true;
 
-    return () => unsubscribe();
+    const fetchCandidates = async () => {
+      const { data, error } = await supabase
+        .from('non_employees')
+        .select('id, data')
+        .order('created_at', { ascending: false });
+      if (!mounted) return;
+      if (!error && data) {
+        setCandidates(data.map((row: any) => ({ id: row.id, ...row.data })) as NonEmployee[]);
+      }
+      setLoading(false);
+    };
+
+    fetchCandidates();
+
+    const channel = supabase
+      .channel('non-employees-list-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'non_employees' }, fetchCandidates)
+      .subscribe();
+
+    return () => {
+      mounted = false;
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const handleDelete = async (id: string, name: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!window.confirm(`Delete candidate query record for ${name}?`)) return;
 
-    try {
-      await deleteDoc(doc(db, 'non_employees', id));
-      toast.success('CANDIDATE_RECORD_DELETED');
-    } catch (err) {
+    const { error } = await supabase.from('non_employees').delete().eq('id', id);
+    if (error) {
       toast.error('FAILED_TO_DELETE_RECORD');
+    } else {
+      toast.success('CANDIDATE_RECORD_DELETED');
     }
   };
 

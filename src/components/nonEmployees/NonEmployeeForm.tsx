@@ -1,7 +1,6 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
-import { db } from '@/lib/firebase';
-import { collection, addDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { supabase } from '@/lib/supabase';
 import { NonEmployee, EmployeeCategory } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -159,20 +158,23 @@ export function NonEmployeeForm({ initialData, onSuccess, onConvertToEmployee }:
         }
       }
 
-      const payload = {
-        ...data,
-        status: derivedStatus,
-        updatedAt: serverTimestamp()
-      };
+      const now = new Date().toISOString();
+      const { id, ...rest } = data as any;
+      const payload = { ...rest, status: derivedStatus, updatedAt: now };
 
       if (isEditing && initialData?.id) {
-        await updateDoc(doc(db, 'non_employees', initialData.id), payload);
+        const { data: existing } = await supabase.from('non_employees').select('data').eq('id', initialData.id).single();
+        const merged = { ...(existing?.data || {}), ...payload };
+        const { error } = await supabase.from('non_employees').update({ data: merged }).eq('id', initialData.id);
+        if (error) throw error;
         toast.success('NON_EMPLOYEE_RECORD_UPDATED_SUCCESSFULLY');
       } else {
-        await addDoc(collection(db, 'non_employees'), {
-          ...payload,
-          createdAt: serverTimestamp()
+        const newId = `QRY-${Math.floor(1000 + Math.random() * 9000)}-${Date.now().toString(36)}`;
+        const { error } = await supabase.from('non_employees').insert({
+          id: newId,
+          data: { ...payload, createdAt: now },
         });
+        if (error) throw error;
         toast.success('NON_EMPLOYEE_QUERY_REGISTERED_SUCCESSFULLY');
         reset();
       }

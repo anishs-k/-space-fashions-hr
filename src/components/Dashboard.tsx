@@ -1,6 +1,5 @@
 import React from 'react';
-import { collection, query, onSnapshot } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { supabase } from '@/lib/supabase';
 import { Employee, NonEmployee } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Briefcase, TrendingUp, AlertCircle, Database, ClipboardList, UserPlus, ArrowRight, UserCheck } from 'lucide-react';
@@ -36,39 +35,41 @@ export function Dashboard() {
   };
 
   React.useEffect(() => {
-    const qEmp = query(collection(db, 'employees'));
-    const unsubEmp = onSnapshot(qEmp, (snapshot) => {
-      const employees = snapshot.docs.map(doc => doc.data() as Employee);
+    const fetchStats = async () => {
+      const { data: empRows } = await supabase.from('employees').select('data');
+      const employees = (empRows || []).map((r: any) => r.data as Employee);
       const depts = new Set(employees.map(e => e.department));
-      
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+
       setStats(prev => ({
         ...prev,
         total: employees.length,
         active: employees.filter(e => e.status === 'active').length,
         departments: depts.size,
-        recentCount: employees.filter(e => {
-          const createdAt = e.createdAt?.toDate?.() || new Date();
-          const weekAgo = new Date();
-          weekAgo.setDate(weekAgo.getDate() - 7);
-          return createdAt > weekAgo;
-        }).length
+        recentCount: employees.filter(e => e.createdAt && new Date(e.createdAt as any) > weekAgo).length
       }));
-    });
 
-    const qNonEmp = query(collection(db, 'non_employees'));
-    const unsubNonEmp = onSnapshot(qNonEmp, (snapshot) => {
-      const candidates = snapshot.docs.map(doc => doc.data() as NonEmployee);
+      const { data: nonEmpRows } = await supabase.from('non_employees').select('data');
+      const candidates = (nonEmpRows || []).map((r: any) => r.data as NonEmployee);
       setStats(prev => ({
         ...prev,
         totalQueries: candidates.length,
         interviewedQueries: candidates.filter(c => c.calledForInterview).length,
         offeredQueries: candidates.filter(c => c.offeredToJoin).length,
       }));
-    });
+    };
+
+    fetchStats();
+
+    const channel = supabase
+      .channel('dashboard-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'employees' }, fetchStats)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'non_employees' }, fetchStats)
+      .subscribe();
 
     return () => {
-      unsubEmp();
-      unsubNonEmp();
+      supabase.removeChannel(channel);
     };
   }, []);
 

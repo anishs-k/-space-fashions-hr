@@ -9,8 +9,8 @@ import { EditEmployee } from '@/components/employees/EditEmployee';
 import { AIExtractor } from '@/components/employees/AIExtractor';
 import { ManualAddHub } from '@/components/manualAdd/ManualAddHub';
 import { EditNonEmployee } from '@/components/nonEmployees/EditNonEmployee';
-import { auth, signInWithGoogle } from '@/lib/firebase';
-import { onAuthStateChanged, User } from 'firebase/auth';
+import { supabase, signInWithGoogle } from '@/lib/supabase';
+import type { User } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
 import { Database, LogIn } from 'lucide-react';
 
@@ -19,10 +19,17 @@ export default function App() {
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    return onAuthStateChanged(auth, (u) => {
-      setUser(u);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
       setLoading(false);
     });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   if (loading) {
@@ -44,12 +51,12 @@ export default function App() {
             <h1 className="font-serif italic text-4xl tracking-tight">Space Fashions</h1>
             <p className="font-mono text-xs uppercase font-bold opacity-50 mt-2">Centralized HR Systems</p>
           </div>
-          
+
           <div className="p-8 border border-[#141414]/10 bg-[#141414]/5 space-y-6">
             <p className="font-mono text-[10px] opacity-60 leading-relaxed uppercase">
               Access restricted to authorized personnel only. Please verify your credentials via Google authentication.
             </p>
-            <Button 
+            <Button
               onClick={signInWithGoogle}
               className="w-full rounded-none bg-[#141414] text-[#E4E3E0] hover:bg-[#141414]/90 font-mono text-xs h-12 gap-3"
             >
@@ -57,7 +64,7 @@ export default function App() {
               AUTHENTICATE_WITH_GOOGLE
             </Button>
           </div>
-          
+
           <div className="font-mono text-[8px] opacity-30 uppercase tracking-widest">
             Protocol v4.0.1 // Secured by Antigravity Ops
           </div>

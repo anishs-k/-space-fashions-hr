@@ -1,6 +1,5 @@
 import React from 'react';
-import { collection, query, onSnapshot, orderBy } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { supabase } from '@/lib/supabase';
 import { Employee, NonEmployee } from '@/types';
 import { 
   Table, 
@@ -27,15 +26,31 @@ export function EmployeeList() {
   const [searchTerm, setSearchTerm] = React.useState('');
 
   React.useEffect(() => {
-    const q = query(collection(db, 'employees'), orderBy('createdAt', 'desc'));
-    
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Employee));
-      setEmployees(docs);
-      setLoading(false);
-    });
+    let mounted = true;
 
-    return () => unsubscribe();
+    const fetchEmployees = async () => {
+      const { data, error } = await supabase
+        .from('employees')
+        .select('id, data')
+        .order('created_at', { ascending: false });
+      if (!mounted) return;
+      if (!error && data) {
+        setEmployees(data.map((row: any) => ({ id: row.id, ...row.data })) as Employee[]);
+      }
+      setLoading(false);
+    };
+
+    fetchEmployees();
+
+    const channel = supabase
+      .channel('employees-list-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'employees' }, fetchEmployees)
+      .subscribe();
+
+    return () => {
+      mounted = false;
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const handleTabChange = (tab: 'employees' | 'queries') => {

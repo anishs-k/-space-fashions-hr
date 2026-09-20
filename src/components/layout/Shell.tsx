@@ -10,7 +10,7 @@ import {
   X,
   Database
 } from 'lucide-react';
-import { auth } from '@/lib/firebase';
+import { supabase, signOut } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
@@ -22,6 +22,11 @@ interface ShellProps {
 
 export function Shell({ children }: ShellProps) {
   const [isOpen, setIsOpen] = React.useState(false);
+  const [userEmail, setUserEmail] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUserEmail(data.user?.email ?? null));
+  }, []);
   const navigate = useNavigate();
 
   const navItems = [
@@ -31,7 +36,7 @@ export function Shell({ children }: ShellProps) {
   ];
 
   const handleLogout = async () => {
-    await auth.signOut();
+    await signOut();
     navigate('/');
   };
 
@@ -180,10 +185,10 @@ export function Shell({ children }: ShellProps) {
           <div className="flex items-center gap-4">
             <div className="hidden sm:block text-right">
               <p className="font-mono text-[10px] leading-tight opacity-50">SYSTEM_STATUS</p>
-              <p className="font-mono text-[10px] leading-tight font-bold text-green-600 underline underline-offset-2">CONNECTED_FIREBASE</p>
+              <p className="font-mono text-[10px] leading-tight font-bold text-green-600 underline underline-offset-2">CONNECTED_SUPABASE</p>
             </div>
             <div className="w-8 h-8 rounded-full bg-[#141414] flex items-center justify-center text-[#E4E3E0] font-mono text-xs">
-              {auth.currentUser?.email?.[0].toUpperCase() || 'U'}
+              {userEmail?.[0]?.toUpperCase() || 'U'}
             </div>
           </div>
         </header>

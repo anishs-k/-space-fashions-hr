@@ -1,7 +1,6 @@
 import React from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { supabase } from '@/lib/supabase';
 import { Employee, EmployeeStatus } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -188,19 +187,25 @@ export function EmployeeForm({ initialData }: { initialData?: Partial<Employee> 
     try {
       const id = data.id || `EMP-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
       const isNew = !data.id;
-      
-      const payload: any = {
-        ...data,
-        updatedAt: serverTimestamp(),
-        status: data.status || 'active'
+      const now = new Date().toISOString();
+
+      const { id: _drop, ...rest } = data as any;
+      let mergedData: any = {
+        ...rest,
+        updatedAt: now,
+        status: data.status || 'active',
       };
 
       if (isNew) {
-        payload.createdAt = serverTimestamp();
+        mergedData.createdAt = now;
+      } else {
+        const { data: existing } = await supabase.from('employees').select('data').eq('id', id).single();
+        mergedData = { ...(existing?.data || {}), ...mergedData };
       }
 
-      await setDoc(doc(db, 'employees', id), payload, { merge: true });
-      
+      const { error } = await supabase.from('employees').upsert({ id, data: mergedData });
+      if (error) throw error;
+
       toast.success('EMPLOYEE_RECORD_SYNCHRONIZED_SUCCESSFULLY');
       navigate('/employees');
     } catch (error) {
