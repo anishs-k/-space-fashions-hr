@@ -1,10 +1,10 @@
 import React from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase, fetchAllRows } from '@/lib/supabase';
 import { Employee, NonEmployee } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Briefcase, TrendingUp, AlertCircle, Database, ClipboardList, UserPlus, ArrowRight, UserCheck } from 'lucide-react';
 import { motion } from 'motion/react';
-import { seedDatabase } from '@/lib/seed';
+import { seedDatabase, pdfSeedData, nonEmployeeSeedData } from '@/lib/seed';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -35,29 +35,52 @@ export function Dashboard() {
   };
 
   React.useEffect(() => {
+    let mounted = true;
+
     const fetchStats = async () => {
-      const { data: empRows } = await supabase.from('employees').select('data');
-      const employees = (empRows || []).map((r: any) => r.data as Employee);
-      const depts = new Set(employees.map(e => e.department));
+      let employees: Employee[] = [];
+      let candidates: NonEmployee[] = [];
+
+      try {
+        const empRows = await fetchAllRows('employees', 'id, data');
+        if (!mounted) return;
+
+        if (empRows && empRows.length > 0) {
+          employees = empRows.map((r: any) => ({ id: r.id, ...(r.data || {}) })) as Employee[];
+        } else {
+          employees = [];
+        }
+
+        const nonEmpRows = await fetchAllRows('non_employees', 'id, data');
+        if (!mounted) return;
+
+        if (nonEmpRows && nonEmpRows.length > 0) {
+          candidates = nonEmpRows.map((r: any) => ({ id: r.id, ...(r.data || {}) })) as NonEmployee[];
+        } else {
+          candidates = [];
+        }
+      } catch (err) {
+        console.error('Dashboard stats fetch error:', err);
+        if (!mounted) return;
+        employees = [];
+        candidates = [];
+      }
+
+      if (!mounted) return;
+
+      const depts = new Set(employees.map(e => e.department).filter(Boolean));
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
 
-      setStats(prev => ({
-        ...prev,
+      setStats({
         total: employees.length,
-        active: employees.filter(e => e.status === 'active').length,
+        active: employees.filter(e => (e.status || 'active') === 'active').length,
         departments: depts.size,
-        recentCount: employees.filter(e => e.createdAt && new Date(e.createdAt as any) > weekAgo).length
-      }));
-
-      const { data: nonEmpRows } = await supabase.from('non_employees').select('data');
-      const candidates = (nonEmpRows || []).map((r: any) => r.data as NonEmployee);
-      setStats(prev => ({
-        ...prev,
+        recentCount: employees.filter(e => e.createdAt && new Date(e.createdAt as any) > weekAgo).length,
         totalQueries: candidates.length,
         interviewedQueries: candidates.filter(c => c.calledForInterview).length,
         offeredQueries: candidates.filter(c => c.offeredToJoin).length,
-      }));
+      });
     };
 
     fetchStats();
@@ -69,6 +92,7 @@ export function Dashboard() {
       .subscribe();
 
     return () => {
+      mounted = false;
       supabase.removeChannel(channel);
     };
   }, []);

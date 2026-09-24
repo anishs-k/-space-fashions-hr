@@ -24,36 +24,96 @@ export function EmployeeBioData({ employee }: EmployeeBioDataProps) {
     );
   };
 
-  // Safe checks for nested fields
-  const l = employee.languages || {
-    hindi: { read: false, write: false, speak: false },
-    english: { read: false, write: false, speak: false },
-    punjabi: { read: false, write: false, speak: false },
-    other: { name: '', skill: { read: false, write: false, speak: false } }
+  const empAny = employee as any;
+
+  // Safe checks and fallbacks for nested & imported fields
+  const rawLang = employee.languages as any;
+  const l = {
+    hindi: {
+      read: !!(rawLang?.hindi?.read ?? (String(empAny.lang_read || '').toLowerCase().includes('hindi'))),
+      write: !!(rawLang?.hindi?.write ?? (String(empAny.lang_write || '').toLowerCase().includes('hindi'))),
+      speak: !!(rawLang?.hindi?.speak ?? (String(empAny.lang_speak || '').toLowerCase().includes('hindi'))),
+    },
+    english: {
+      read: !!(rawLang?.english?.read ?? (String(empAny.lang_read || '').toLowerCase().includes('english'))),
+      write: !!(rawLang?.english?.write ?? (String(empAny.lang_write || '').toLowerCase().includes('english'))),
+      speak: !!(rawLang?.english?.speak ?? (String(empAny.lang_speak || '').toLowerCase().includes('english'))),
+    },
+    punjabi: {
+      read: !!(rawLang?.punjabi?.read ?? (String(empAny.lang_read || '').toLowerCase().includes('punjabi'))),
+      write: !!(rawLang?.punjabi?.write ?? (String(empAny.lang_write || '').toLowerCase().includes('punjabi'))),
+      speak: !!(rawLang?.punjabi?.speak ?? (String(empAny.lang_speak || '').toLowerCase().includes('punjabi'))),
+    },
+    other: rawLang?.other || { name: '', skill: { read: false, write: false, speak: false } }
   };
 
-  const o = employee.officeUse || {
-    basicPay: 0,
-    esiEmployee: 0,
-    pfEmployee: 0,
-    esiEmployer: 0,
-    pfEmployer: 0,
-    bonus: 0,
-    lwfEmployer: 20,
-    lwfEmployee: 5,
-    ctc: 0,
-    netCash: 0,
-    lwwAllowed: 0,
-    lwwAmount: 0,
-    applyEsi: true,
-    applyPf: true,
-    applyLwf: true,
-    applyLww: true,
-    remarks: ''
+  const o = employee.officeUse || empAny.office_use || {};
+
+  // Standard Space Fashions Statutory Calculation Engine (Exact match with EmployeeForm)
+  const bp = Number(o.basicPay) || Number(empAny.basic_pay) || Number(empAny.basicPay) || 0;
+  const isEsiActive = o.applyEsi !== false;
+  const isPfActive = o.applyPf !== false;
+  const isLwfActive = o.applyLwf !== false;
+  const isLwwActive = o.applyLww !== false;
+  const lwwAmount = isLwwActive ? (Number(o.lwwAmount) || Number(empAny.lww_amount) || 0) : 0;
+  const bonus = Number(o.bonus) || Number(empAny.bonus) || 0;
+
+  // Head 1 (Employee Share)
+  const esiEmployee = (!isEsiActive || bp > 21000) ? 0 : Math.round(bp * 0.0075);
+  const pfEmployee = !isPfActive ? 0 : (bp > 15000 ? 1800 : Math.round(bp * 0.12));
+  const lwfEmployee = isLwfActive && bp > 0 ? 5 : 0;
+  const netCash = bp > 0 ? (bp - (esiEmployee + pfEmployee + lwfEmployee)) : 0;
+
+  // Head 2 (Employer Share)
+  const esiEmployer = (!isEsiActive || bp > 21000) ? 0 : Math.round(bp * 0.0325);
+  const pfEmployer = !isPfActive ? 0 : (bp > 15000 ? 1800 : Math.round(bp * 0.12));
+  const lwfEmployer = isLwfActive && bp > 0 ? 20 : 0;
+  const totalCTC = bp > 0 ? (bp + esiEmployer + pfEmployer + lwfEmployer + lwwAmount + bonus) : 0;
+
+  // Nominee fallback
+  const nominee = employee.nominee || {
+    name: empAny.nominee_name || 'NOT_RECORDED',
+    relation: empAny.nominee_relation || 'N/A',
+    age: Number(empAny.nominee_age) || 0,
+    dob: empAny.nominee_dob || ''
   };
 
-  const nominee = employee.nominee || { name: 'NOT_RECORDED', relation: 'N/A', age: 0, dob: '' };
-  const family = employee.family || [];
+  // Family fallback
+  let family = employee.family || [];
+  if (family.length === 0 && empAny.family_particulars) {
+    const rawFam = String(empAny.family_particulars);
+    family = rawFam.split(';').map(f => {
+      const parts = f.split('/').map(p => p.trim());
+      return {
+        name: parts[0] || '',
+        age: Number(parts[1]) || 0,
+        relation: parts[2] || '',
+        dob: '',
+        mobileNumber: ''
+      };
+    }).filter(f => f.name);
+  }
+
+  // Normalized display fields
+  const employeeCode = employee.employeeCode || empAny.code_serial || employee.id.replace('EMP-', '');
+  const department = employee.department || empAny.Department || 'N/A';
+  const postAppliedFor = employee.postAppliedFor || empAny.post_applied_for || 'N/A';
+  const jobProcessAssigned = employee.jobProcessAssigned || empAny.skills_machine || 'N/A';
+  const name = employee.name || empAny.Name || 'N/A';
+  const fatherHusbandName = employee.fatherHusbandName || empAny.father_husband_name || 'N/A';
+  const dob = employee.dob || 'N/A';
+  const age = employee.age || empAny.Age;
+  const contactNo = employee.contactNo || empAny.contact_no || 'N/A';
+  const permanentAddress = employee.permanentAddress || empAny.permanent_address || 'N/A';
+  const localAddress = employee.localAddress || empAny.local_address || 'N/A';
+  const qualification = employee.qualification || empAny.Qualification || 'NOT_SPECIFIED';
+  const technicalQualification = employee.technicalQualification || empAny.technical_qualification || 'N/A';
+  const experience = employee.experience || 'Fresher / No documented remarks';
+  const reference = employee.reference || 'Personal recruitment / Walk-in';
+  const dateOfJoining = employee.dateOfJoining || empAny.date_of_joining || 'PROBATION_PENDING';
+  const esiId = employee.esi || empAny.esi_no || 'N/A';
+  const pfId = employee.pf || empAny.pf_no || 'N/A';
+  const uanId = employee.uan || empAny.uan_no || 'N/A';
 
   return (
     <div className="space-y-6">
@@ -81,7 +141,7 @@ export function EmployeeBioData({ employee }: EmployeeBioDataProps) {
           <h1 className="text-3xl tracking-wide uppercase font-bold text-center">Space Fashions Limited</h1>
           <p className="font-mono text-xs uppercase tracking-widest opacity-60">Personnel Registry & Professional Bio-Data Form</p>
           <div className="flex justify-between items-center pt-4 font-mono text-[9px] opacity-50 uppercase">
-            <span>Doc Code: SFL/HR/REC/{employee.employeeCode || employee.id.slice(0, 8)}</span>
+            <span>Doc Code: SFL/HR/REC/{employeeCode}</span>
             <span>Ref protocol: ERP-4.1.2</span>
             <span>Date Generated: {new Date().toLocaleDateString()}</span>
           </div>
@@ -100,40 +160,40 @@ export function EmployeeBioData({ employee }: EmployeeBioDataProps) {
               <div className="grid grid-cols-2 gap-x-4 gap-y-3 font-serif text-sm">
                 <div>
                   <span className="block font-mono text-[9px] uppercase opacity-40">Employee Code</span>
-                  <span className="font-bold font-mono text-xs">{employee.employeeCode || 'NOT_ASSIGNED'}</span>
+                  <span className="font-bold font-mono text-xs">{employeeCode}</span>
                 </div>
                 <div>
                   <span className="block font-mono text-[9px] uppercase opacity-40">Department</span>
-                  <span className="font-bold">{employee.department || 'N/A'}</span>
+                  <span className="font-bold">{department}</span>
                 </div>
                 <div>
                   <span className="block font-mono text-[9px] uppercase opacity-40">Post Applied For</span>
-                  <span className="font-bold italic">{employee.postAppliedFor || 'N/A'}</span>
+                  <span className="font-bold italic">{postAppliedFor}</span>
                 </div>
                 <div>
                   <span className="block font-mono text-[9px] uppercase opacity-40">Job / Process Assigned</span>
-                  <span className="font-semibold text-xs text-[#141414]">{employee.jobProcessAssigned || 'N/A'}</span>
+                  <span className="font-semibold text-xs text-[#141414]">{jobProcessAssigned}</span>
                 </div>
                 <div className="col-span-2 border-t border-dotted border-[#141414]/10 pt-2">
                   <span className="block font-mono text-[9px] uppercase opacity-40">Full Name</span>
-                  <span className="text-base font-bold tracking-tight">{employee.name}</span>
+                  <span className="text-base font-bold tracking-tight">{name}</span>
                 </div>
                 <div className="col-span-2 border-t border-dotted border-[#141414]/10 pt-2">
                   <span className="block font-mono text-[9px] uppercase opacity-40">Father / Husband Name</span>
-                  <span>{employee.fatherHusbandName || 'N/A'}</span>
+                  <span>{fatherHusbandName}</span>
                 </div>
                 <div className="border-t border-dotted border-[#141414]/10 pt-2">
                   <span className="block font-mono text-[9px] uppercase opacity-40">Date of Birth</span>
-                  <span>{employee.dob || 'N/A'}</span>
+                  <span>{dob}</span>
                 </div>
                 <div className="border-t border-dotted border-[#141414]/10 pt-2">
                   <span className="block font-mono text-[9px] uppercase opacity-40">Current Age</span>
-                  <span>{employee.age ? `${employee.age} Years` : 'N/A'}</span>
+                  <span>{age ? `${age} Years` : 'N/A'}</span>
                 </div>
                 <div className="border-t border-dotted border-[#141414]/10 pt-2 col-span-2">
                   <span className="block font-mono text-[9px] uppercase opacity-40">Contact Numbers</span>
                   <span className="font-mono text-xs">
-                    {employee.contactNo} {employee.alternateContactNo ? ` / ${employee.alternateContactNo}` : ''}
+                    {contactNo} {employee.alternateContactNo ? ` / ${employee.alternateContactNo}` : ''}
                   </span>
                 </div>
               </div>
@@ -147,11 +207,11 @@ export function EmployeeBioData({ employee }: EmployeeBioDataProps) {
               <div className="space-y-2 text-sm">
                 <div>
                   <span className="block font-mono text-[9px] uppercase opacity-40">Permanent Address</span>
-                  <p className="italic leading-relaxed">{employee.permanentAddress || 'N/A'}</p>
+                  <p className="italic leading-relaxed">{permanentAddress}</p>
                 </div>
                 <div className="border-t border-dotted border-[#141414]/10 pt-2">
                   <span className="block font-mono text-[9px] uppercase opacity-40">Local Address</span>
-                  <p className="italic leading-relaxed">{employee.localAddress || 'N/A'}</p>
+                  <p className="italic leading-relaxed">{localAddress}</p>
                 </div>
               </div>
             </div>
@@ -164,19 +224,19 @@ export function EmployeeBioData({ employee }: EmployeeBioDataProps) {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="block font-mono text-[9px] uppercase opacity-40">Primary Qualification</span>
-                  <span>{employee.qualification || 'NOT_SPECIFIED'}</span>
+                  <span>{qualification}</span>
                 </div>
                 <div>
                   <span className="block font-mono text-[9px] uppercase opacity-40">Technical Qualification</span>
-                  <span>{employee.technicalQualification || 'N/A'}</span>
+                  <span>{technicalQualification}</span>
                 </div>
                 <div className="col-span-2 border-t border-dotted border-[#141414]/10 pt-2">
                   <span className="block font-mono text-[9px] uppercase opacity-40">Prior Experience Summary</span>
-                  <span>{employee.experience || 'Fresher / No documented remarks'}</span>
+                  <span>{experience}</span>
                 </div>
                 <div className="col-span-2 border-t border-dotted border-[#141414]/10 pt-2">
                   <span className="block font-mono text-[9px] uppercase opacity-40">Referenced By</span>
-                  <span className="italic">{employee.reference || 'Personal recruitment / Walk-in'}</span>
+                  <span className="italic">{reference}</span>
                 </div>
               </div>
             </div>
@@ -188,7 +248,7 @@ export function EmployeeBioData({ employee }: EmployeeBioDataProps) {
             <div className="flex flex-col items-center">
               <div className="w-32 h-36 border-2 border-dashed border-[#141414]/30 flex flex-col items-center justify-center p-1 bg-[#141414]/5 relative overflow-hidden">
                 {employee.photoUrl ? (
-                  <img src={employee.photoUrl} alt={employee.name} referrerPolicy="no-referrer" className="w-full h-full object-cover grayscale contrast-125" />
+                  <img src={employee.photoUrl} alt={name} referrerPolicy="no-referrer" className="w-full h-full object-cover grayscale contrast-125" />
                 ) : (
                   <div className="text-center p-3">
                     <span className="font-mono text-[8px] uppercase opacity-35 leading-none block">Candidate Photo</span>
@@ -205,7 +265,7 @@ export function EmployeeBioData({ employee }: EmployeeBioDataProps) {
             <div className="bg-[#141414]/5 p-3 border border-[#141414]/10 space-y-2 text-xs">
               <div>
                 <span className="block font-mono text-[8px] uppercase opacity-50">Date of Joining</span>
-                <span className="font-mono font-bold text-[#141414]">{employee.dateOfJoining || 'PROBATION_PENDING'}</span>
+                <span className="font-mono font-bold text-[#141414]">{dateOfJoining}</span>
               </div>
               {employee.dateOfLeaving && (
                 <div className="border-t border-[#141414]/10 pt-2">
@@ -385,15 +445,15 @@ export function EmployeeBioData({ employee }: EmployeeBioDataProps) {
                 <span className="block font-mono text-[8px] uppercase font-bold opacity-60 border-b border-[#141414]/15 pb-1">Statutory IDs</span>
                 <div className="flex justify-between font-mono">
                   <span className="opacity-40">OLD ESI</span>
-                  <span className="font-bold">{employee.esi || 'N/A'}</span>
+                  <span className="font-bold">{esiId}</span>
                 </div>
                 <div className="flex justify-between font-mono border-t border-dotted border-[#141414]/10 pt-1.5">
                   <span className="opacity-40">OLD PF</span>
-                  <span className="font-bold">{employee.pf || 'N/A'}</span>
+                  <span className="font-bold">{pfId}</span>
                 </div>
                 <div className="flex justify-between font-mono border-t border-dotted border-[#141414]/10 pt-1.5">
                   <span className="opacity-40">OLD UAN</span>
-                  <span className="font-bold">{employee.uan || 'N/A'}</span>
+                  <span className="font-bold">{uanId}</span>
                 </div>
               </div>
 
@@ -415,27 +475,27 @@ export function EmployeeBioData({ employee }: EmployeeBioDataProps) {
               <div className="space-y-1.5">
                 <div className="flex justify-between font-bold text-[11px]">
                   <span className="opacity-70">HEAD 1: EMPLOYEE SHARE (CASH FOCUS)</span>
-                  <span>Rs. {(o.basicPay || 0).toLocaleString()}</span>
+                  <span>Rs. {bp.toLocaleString()}</span>
                 </div>
 
                 <div className="flex justify-between text-[10px] text-red-700">
                   <span>- ESI EMPLOYEE SHARE (0.75% upto ₹21,000)</span>
-                  <span>Rs. {(o.esiEmployee || 0).toLocaleString()}</span>
+                  <span>Rs. {esiEmployee.toLocaleString()}</span>
                 </div>
 
                 <div className="flex justify-between text-[10px] text-red-700">
                   <span>- PF EMPLOYEE SHARE (12% / max ₹1,800)</span>
-                  <span>Rs. {(o.pfEmployee || 0).toLocaleString()}</span>
+                  <span>Rs. {pfEmployee.toLocaleString()}</span>
                 </div>
 
                 <div className="flex justify-between text-[10px] text-red-700">
                   <span>- LWF EMPLOYEE FUND</span>
-                  <span>Rs. {(o.lwfEmployee || 0).toLocaleString()}</span>
+                  <span>Rs. {lwfEmployee.toLocaleString()}</span>
                 </div>
 
                 <div className="flex justify-between items-center border-t border-dotted border-[#141414]/20 pt-1.5 font-bold">
                   <span>NET ESTIMATED PAYABLE CASH IN HAND</span>
-                  <span className="text-sm underline underline-offset-2">Rs. {(o.netCash || 0).toLocaleString()}</span>
+                  <span className="text-sm underline underline-offset-2">Rs. {netCash.toLocaleString()}</span>
                 </div>
               </div>
 
@@ -447,32 +507,32 @@ export function EmployeeBioData({ employee }: EmployeeBioDataProps) {
 
                 <div className="flex justify-between text-[10px]">
                   <span className="opacity-60">+ ESI EMPLOYER SHARE (3.25% upto ₹21,000)</span>
-                  <span>Rs. {(o.esiEmployer || 0).toLocaleString()}</span>
+                  <span>Rs. {esiEmployer.toLocaleString()}</span>
                 </div>
 
                 <div className="flex justify-between text-[10px]">
                   <span className="opacity-60">+ PF EMPLOYER SHARE (12% / max ₹1,800)</span>
-                  <span>Rs. {(o.pfEmployer || 0).toLocaleString()}</span>
+                  <span>Rs. {pfEmployer.toLocaleString()}</span>
                 </div>
 
                 <div className="flex justify-between text-[10px]">
                   <span className="opacity-60">+ LWF EMPLOYER RETIREMENT FUND</span>
-                  <span>Rs. {(o.lwfEmployer || 0).toLocaleString()}</span>
+                  <span>Rs. {lwfEmployer.toLocaleString()}</span>
                 </div>
 
                 <div className="flex justify-between text-[10px]">
                   <span className="opacity-60">+ ALLOWED MONTH LEAVE CONVERSION (LWW)</span>
-                  <span>Rs. {(o.lwwAmount || 0).toLocaleString()} (Leaves: {o.lwwAllowed || 0})</span>
+                  <span>Rs. {lwwAmount.toLocaleString()} (Leaves: {o.lwwAllowed || 0})</span>
                 </div>
 
                 <div className="flex justify-between text-[10px]">
                   <span className="opacity-60">+ INCENTIVE BONUS</span>
-                  <span>Rs. {(o.bonus || 0).toLocaleString()}</span>
+                  <span>Rs. {bonus.toLocaleString()}</span>
                 </div>
 
                 <div className="flex justify-between items-center border-t-2 border-double border-[#141414] pt-2 font-black text-sm text-[#141414]">
                   <span>TOTAL ESTIMATED C.T.C. TO COMPLIANCE</span>
-                  <span className="underline underline-offset-4 decoration-2">Rs. {(o.ctc || 0).toLocaleString()}</span>
+                  <span className="underline underline-offset-4 decoration-2">Rs. {totalCTC.toLocaleString()}</span>
                 </div>
               </div>
             </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase, fetchAllRows } from '@/lib/supabase';
 import { Employee, NonEmployee } from '@/types';
 import { 
   Table, 
@@ -14,6 +14,7 @@ import { Search, Filter, ArrowUpRight, Users, ClipboardList, Plus } from 'lucide
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { pdfSeedData, seedDatabase } from '@/lib/seed';
 import { NonEmployeeList } from '@/components/nonEmployees/NonEmployeeList';
 
 export function EmployeeList() {
@@ -29,13 +30,21 @@ export function EmployeeList() {
     let mounted = true;
 
     const fetchEmployees = async () => {
-      const { data, error } = await supabase
-        .from('employees')
-        .select('id, data')
-        .order('created_at', { ascending: false });
-      if (!mounted) return;
-      if (!error && data) {
-        setEmployees(data.map((row: any) => ({ id: row.id, ...row.data })) as Employee[]);
+      try {
+        const data = await fetchAllRows('employees');
+        if (!mounted) return;
+        
+        if (data && data.length > 0) {
+          const list = data.map((row: any) => ({ id: row.id, ...row.data })) as Employee[];
+          list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+          setEmployees(list);
+        } else {
+          setEmployees([]);
+        }
+      } catch (error) {
+        console.error('Error fetching employees:', error);
+        if (!mounted) return;
+        setEmployees([]);
       }
       setLoading(false);
     };

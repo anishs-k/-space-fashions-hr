@@ -10,7 +10,8 @@ import {
   X,
   Database
 } from 'lucide-react';
-import { supabase, signOut } from '@/lib/supabase';
+// import { supabase, signOut } from '@/lib/supabase';
+import { SESSION_KEY, SESSION_USER_KEY } from '@/components/auth/LoginPage';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
@@ -25,7 +26,8 @@ export function Shell({ children }: ShellProps) {
   const [userEmail, setUserEmail] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUserEmail(data.user?.email ?? null));
+    // ORIGINAL (Google auth): supabase.auth.getUser().then(({ data }) => setUserEmail(data.user?.email ?? null));
+    setUserEmail(sessionStorage.getItem(SESSION_USER_KEY));
   }, []);
   const navigate = useNavigate();
 
@@ -36,8 +38,12 @@ export function Shell({ children }: ShellProps) {
   ];
 
   const handleLogout = async () => {
-    await signOut();
+    // ORIGINAL (Google auth): await signOut();
+    sessionStorage.removeItem(SESSION_KEY);
+    sessionStorage.removeItem(SESSION_USER_KEY);
     navigate('/');
+    // App ke isLoggedIn state ko reset karne ke liye full reload
+    window.location.reload();
   };
 
   const NavContent = () => (

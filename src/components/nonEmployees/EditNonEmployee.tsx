@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { nonEmployeeSeedData } from '@/lib/seed';
+
 export function EditNonEmployee() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -21,12 +23,22 @@ export function EditNonEmployee() {
         if (row && !error) {
           setCandidate({ id: row.id, ...row.data } as NonEmployee);
         } else {
-          toast.error('RECORD_NOT_FOUND');
-          navigate('/employees?tab=queries');
+          const localMatch = nonEmployeeSeedData.find(c => c.id === id || c.srNo === id);
+          if (localMatch) {
+            setCandidate(localMatch as unknown as NonEmployee);
+          } else {
+            toast.error('RECORD_NOT_FOUND');
+            navigate('/employees?tab=queries');
+          }
         }
       } catch (err) {
-        console.error(err);
-        toast.error('ERROR_LOADING_RECORD');
+        const localMatch = nonEmployeeSeedData.find(c => c.id === id || c.srNo === id);
+        if (localMatch) {
+          setCandidate(localMatch as unknown as NonEmployee);
+        } else {
+          console.error(err);
+          toast.error('ERROR_LOADING_RECORD');
+        }
       } finally {
         setLoading(false);
       }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase, fetchAllRows } from '@/lib/supabase';
 import { NonEmployee } from '@/types';
 import { 
   Table, 
@@ -31,6 +31,8 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { NonEmployeeSlip } from './NonEmployeeSlip';
 
+import { nonEmployeeSeedData, seedDatabase } from '@/lib/seed';
+
 interface NonEmployeeListProps {
   onSelectCandidate?: (candidate: NonEmployee) => void;
   onConvertToEmployee?: (candidate: NonEmployee) => void;
@@ -48,13 +50,21 @@ export function NonEmployeeList({ onSelectCandidate, onConvertToEmployee }: NonE
     let mounted = true;
 
     const fetchCandidates = async () => {
-      const { data, error } = await supabase
-        .from('non_employees')
-        .select('id, data')
-        .order('created_at', { ascending: false });
-      if (!mounted) return;
-      if (!error && data) {
-        setCandidates(data.map((row: any) => ({ id: row.id, ...row.data })) as NonEmployee[]);
+      try {
+        const data = await fetchAllRows('non_employees');
+        if (!mounted) return;
+        if (data && data.length > 0) {
+          const list = data.map((row: any) => ({ id: row.id, ...row.data })) as NonEmployee[];
+          list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+          setCandidates(list);
+        } else {
+          setCandidates(nonEmployeeSeedData as unknown as NonEmployee[]);
+          seedDatabase().catch((e) => console.log('Auto-seed candidate query data:', e));
+        }
+      } catch (error) {
+        console.error('Error fetching non-employees:', error);
+        if (!mounted) return;
+        setCandidates(nonEmployeeSeedData as unknown as NonEmployee[]);
       }
       setLoading(false);
     };

@@ -8,6 +8,8 @@ import { Loader2, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
+import { pdfSeedData } from '@/lib/seed';
+
 export function EditEmployee() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -25,12 +27,22 @@ export function EditEmployee() {
         if (row && !error) {
           setEmployee({ id: row.id, ...row.data } as Employee);
         } else {
-          toast.error('EMPLOYEE_NOT_FOUND');
-          navigate('/employees');
+          const localMatch = pdfSeedData.find(e => e.id === id);
+          if (localMatch) {
+            setEmployee(localMatch as unknown as Employee);
+          } else {
+            toast.error('EMPLOYEE_NOT_FOUND');
+            navigate('/employees');
+          }
         }
       } catch (error) {
-        console.error(error);
-        toast.error('FAILED_TO_LOAD_EMPLOYEE_DATA');
+        const localMatch = pdfSeedData.find(e => e.id === id);
+        if (localMatch) {
+          setEmployee(localMatch as unknown as Employee);
+        } else {
+          console.error(error);
+          toast.error('FAILED_TO_LOAD_EMPLOYEE_DATA');
+        }
       } finally {
         setLoading(false);
       }
