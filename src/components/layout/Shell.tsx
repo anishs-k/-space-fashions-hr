@@ -164,7 +164,7 @@ export function Shell({ children }: ShellProps) {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 md:pl-64 flex flex-col print:pl-0">
+      <main className="flex-1 min-w-0 md:pl-64 flex flex-col print:pl-0">
         {/* Header */}
         <header className="h-16 border-b border-[#141414]/10 bg-[#E4E3E0]/80 backdrop-blur-sm sticky top-0 z-30 flex items-center justify-between px-6 print:hidden">
           <div className="flex items-center gap-4">
@@ -200,7 +200,7 @@ export function Shell({ children }: ShellProps) {
         </header>
 
         {/* Content Area */}
-        <div className="flex-1 p-6 overflow-auto print:p-0">
+        <div className="flex-1 min-w-0 p-6 overflow-auto print:p-0">
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}

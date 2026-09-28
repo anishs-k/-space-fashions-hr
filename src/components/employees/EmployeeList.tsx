@@ -70,12 +70,26 @@ export function EmployeeList() {
     navigate('/add?type=employee', { state: { prefillCandidate: candidate } });
   };
 
-  const filteredEmployees = employees.filter(emp => 
-    emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    emp.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    emp.postAppliedFor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (emp.jobProcessAssigned && emp.jobProcessAssigned.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  // Every word typed must match somewhere (code, name, phone, dept, post, etc.)
+  const searchTokens = searchTerm.toLowerCase().trim().split(/\s+/).filter(Boolean);
+  const filteredEmployees = searchTokens.length === 0 ? employees : employees.filter(emp => {
+    const haystack = [
+      emp.employeeCode,
+      emp.id,
+      emp.name,
+      emp.fatherHusbandName,
+      emp.contactNo,
+      emp.department,
+      emp.postAppliedFor,
+      emp.jobProcessAssigned,
+      emp.category,
+      emp.status,
+    ]
+      .filter(v => v !== undefined && v !== null)
+      .map(v => String(v).toLowerCase().replace(/\s+/g, ' '))
+      .join(' | ');
+    return searchTokens.every(token => haystack.includes(token));
+  });
 
   return (
     <div className="space-y-6 font-mono">
@@ -178,7 +192,7 @@ export function EmployeeList() {
                       <TableCell>
                         <div>{emp.postAppliedFor}</div>
                         {emp.jobProcessAssigned && (
-                          <div className="text-[9px] opacity-60 italic">{emp.jobProcessAssigned}</div>
+                          <div className="text-[9px] opacity-60 italic whitespace-normal max-w-xs line-clamp-2" title={emp.jobProcessAssigned}>{emp.jobProcessAssigned}</div>
                         )}
                       </TableCell>
                       <TableCell>{emp.department}</TableCell>
