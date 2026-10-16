@@ -2,6 +2,7 @@ import React from 'react';
 import { Employee } from '@/types';
 import { Printer, Check, X, ShieldAlert, Award, CreditCard, Users2, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { formatDateDisplay, normalizeDate } from '@/lib/utils';
 
 interface EmployeeBioDataProps {
   employee: Employee;
@@ -75,7 +76,7 @@ export function EmployeeBioData({ employee }: EmployeeBioDataProps) {
     name: empAny.nominee_name || 'NOT_RECORDED',
     relation: empAny.nominee_relation || 'N/A',
     age: Number(empAny.nominee_age) || 0,
-    dob: empAny.nominee_dob || ''
+    dob: formatDateDisplay(empAny.nominee_dob || '')
   };
 
   // Family fallback
@@ -101,7 +102,7 @@ export function EmployeeBioData({ employee }: EmployeeBioDataProps) {
   const jobProcessAssigned = employee.jobProcessAssigned || empAny.skills_machine || 'N/A';
   const name = employee.name || empAny.Name || 'N/A';
   const fatherHusbandName = employee.fatherHusbandName || empAny.father_husband_name || 'N/A';
-  const dob = employee.dob || 'N/A';
+  const dob = formatDateDisplay(employee.dob || empAny.dob);
   const age = employee.age || empAny.Age;
   const contactNo = employee.contactNo || empAny.contact_no || 'N/A';
   const permanentAddress = employee.permanentAddress || empAny.permanent_address || 'N/A';
@@ -110,7 +111,7 @@ export function EmployeeBioData({ employee }: EmployeeBioDataProps) {
   const technicalQualification = employee.technicalQualification || empAny.technical_qualification || 'N/A';
   const experience = employee.experience || 'Fresher / No documented remarks';
   const reference = employee.reference || 'Personal recruitment / Walk-in';
-  const dateOfJoining = employee.dateOfJoining || empAny.date_of_joining || 'PROBATION_PENDING';
+  const dateOfJoining = formatDateDisplay(employee.dateOfJoining || empAny.date_of_joining);
   const esiId = employee.esi || empAny.esi_no || 'N/A';
   const pfId = employee.pf || empAny.pf_no || 'N/A';
   const uanId = employee.uan || empAny.uan_no || 'N/A';

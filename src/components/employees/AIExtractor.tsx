@@ -10,6 +10,8 @@ import { useNavigate } from 'react-router-dom';
 import { supabase, fetchAllRows, upsertInBatches } from '@/lib/supabase';
 import * as XLSX from 'xlsx';
 
+import { normalizeDate } from '@/lib/utils';
+
 export function AIExtractor() {
   const navigate = useNavigate();
   const [pendingEmployees, setPendingEmployees] = React.useState<any[]>([]);
@@ -109,7 +111,7 @@ export function AIExtractor() {
               jobProcessAssigned: String(r.skills_machine || r.jobProcessAssigned || '').trim(),
               department: String(r.department || r['Department'] || 'Production').trim(),
               fatherHusbandName: String(r.father_husband_name || r.fatherHusbandName || '').trim(),
-              dob: String(r.dob || '').trim(),
+              dob: normalizeDate(r.dob),
               age: Number(r.age) || 0,
               qualification: String(r.qualification || '').trim(),
               technicalQualification: String(r.technical_qualification || '').trim(),
@@ -118,7 +120,7 @@ export function AIExtractor() {
               reference: String(r.reference || '').trim(),
               contactNo: String(r.contact_no || r.contactNo || '').replace(/\.0$/, '').trim(),
               alternateContactNo: '',
-              dateOfJoining: String(r.date_of_joining || '').trim(),
+              dateOfJoining: normalizeDate(r.date_of_joining),
               category: 'Worker',
               status: 'active',
               languages: {
@@ -142,7 +144,7 @@ export function AIExtractor() {
               nominee: {
                 name: String(r.nominee_name || '').trim(),
                 age: Number(r.nominee_age) || 0,
-                dob: String(r.nominee_dob || '').trim(),
+                dob: normalizeDate(r.nominee_dob),
                 relation: String(r.nominee_relation || '').trim()
               },
               family: familyList,

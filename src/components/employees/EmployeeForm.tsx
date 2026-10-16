@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { toast } from 'sonner';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Save, User, Briefcase, MapPin, Phone, ClipboardCheck, Users, Clock, Plus, Trash2, Languages as LanguagesIcon, Calculator, RefreshCw } from 'lucide-react';
+import { normalizeDate } from '@/lib/utils';
 
 const emptyDefaultValues = {
   status: 'active' as EmployeeStatus,
@@ -44,9 +45,19 @@ const emptyDefaultValues = {
 
 const getFormDefaults = (initial?: Partial<Employee>): Partial<Employee> => {
   if (!initial) return emptyDefaultValues;
+  
+  // Normalize date fields from DD-MM-YYYY or other formats to YYYY-MM-DD for HTML date inputs
+  const initAny = initial as any;
+  const normalizedDob = normalizeDate(initial.dob || initAny.dob);
+  const normalizedDateOfJoining = normalizeDate(initial.dateOfJoining || initAny.date_of_joining);
+  const normalizedDateOfLeaving = normalizeDate(initial.dateOfLeaving);
+  
   return {
     ...emptyDefaultValues,
     ...initial,
+    dob: normalizedDob,
+    dateOfJoining: normalizedDateOfJoining,
+    dateOfLeaving: normalizedDateOfLeaving,
     languages: {
       hindi: { ...emptyDefaultValues.languages.hindi, ...(initial.languages?.hindi || {}) },
       english: { ...emptyDefaultValues.languages.english, ...(initial.languages?.english || {}) },
@@ -63,7 +74,12 @@ const getFormDefaults = (initial?: Partial<Employee>): Partial<Employee> => {
     family: initial.family && initial.family.length > 0
       ? initial.family
       : emptyDefaultValues.family,
-    nominee: initial.nominee || { name: '', age: 0, dob: '', relation: '' }
+    nominee: initial.nominee
+      ? {
+          ...initial.nominee,
+          dob: normalizeDate(initial.nominee.dob)
+        }
+      : { name: '', age: 0, dob: '', relation: '' }
   };
 };
 
