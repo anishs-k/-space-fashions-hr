@@ -1,5 +1,5 @@
 import React from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { supabase } from '@/lib/supabase';
 import { Employee, EmployeeStatus } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { toast } from 'sonner';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Save, User, Briefcase, MapPin, Phone, ClipboardCheck, Users, Clock, Plus, Trash2, Languages as LanguagesIcon, Calculator, RefreshCw } from 'lucide-react';
-import { normalizeDate } from '@/lib/utils';
+import { normalizeDate, calculateAge, splitTime, normalizeClock, calculateDutyHours, halfBreakTime, Meridiem } from '@/lib/utils';
 
 const emptyDefaultValues = {
   status: 'active' as EmployeeStatus,
@@ -43,6 +43,14 @@ const emptyDefaultValues = {
   }
 };
 
+// Maps older free-text shift values ("day", "DAY SHIFT", "night", ...) to the dropdown options
+const normalizeShift = (raw: any): string => {
+  const str = String(raw ?? '').toLowerCase();
+  if (str.includes('night')) return 'Night';
+  if (str.includes('day')) return 'Day';
+  return '';
+};
+
 const getFormDefaults = (initial?: Partial<Employee>): Partial<Employee> => {
   if (!initial) return emptyDefaultValues;
   
@@ -56,6 +64,8 @@ const getFormDefaults = (initial?: Partial<Employee>): Partial<Employee> => {
     ...emptyDefaultValues,
     ...initial,
     dob: normalizedDob,
+    age: initial.age || calculateAge(normalizedDob),
+    shiftTime: normalizeShift(initial.shiftTime),
     dateOfJoining: normalizedDateOfJoining,
     dateOfLeaving: normalizedDateOfLeaving,
     languages: {
@@ -120,7 +130,7 @@ export function EmployeeForm({ initialData }: { initialData?: Partial<Employee> 
     return {};
   }, [initialData, prefillCandidate]);
 
-  const { register, handleSubmit, watch, setValue, control, formState: { isSubmitting } } = useForm<Partial<Employee>>({
+  const { register, handleSubmit, watch, setValue, getValues, trigger, control, formState: { isSubmitting, errors } } = useForm<Partial<Employee>>({
     defaultValues: getFormDefaults(mergedInitial)
   });
   const navigate = useNavigate();
@@ -132,6 +142,12 @@ export function EmployeeForm({ initialData }: { initialData?: Partial<Employee> 
   const applyPf = watch('officeUse.applyPf');
   const applyLwf = watch('officeUse.applyLwf');
   const applyLww = watch('officeUse.applyLww');
+  const dateOfJoining = watch('dateOfJoining');
+
+  const updateDutyHours = (inTime?: string, outTime?: string) => {
+    const hours = calculateDutyHours(inTime, outTime);
+    if (hours) setValue('dutyHours', hours, { shouldDirty: true });
+  };
 
   const { fields, append, remove } = useFieldArray({
     control,
@@ -151,8 +167,8 @@ export function EmployeeForm({ initialData }: { initialData?: Partial<Employee> 
       // ESI Employee Logic: 0.75% of basic up to 21000. If basic > 21000 or applyEsi is false -> 0
       const esiEmp = (!isEsiActive || bp > 21000) ? 0 : Math.round(bp * 0.0075);
       
-      // PF Employee Logic: 12% of basic if <= 15000; fixed 1800 if > 15000; 0 if applyPf is false
-      const pfEmp = !isPfActive ? 0 : (bp > 15000 ? 1800 : Math.round(bp * 0.12));
+      // PF Employee Logic: 12% of basic if <= 25000; fixed 3000 if > 25000; 0 if applyPf is false
+      const pfEmp = !isPfActive ? 0 : (bp > 25000 ? 3000 : Math.round(bp * 0.12));
       
       // LWF Employee: 5 if active, 0 if false
       const lwfEmp = isLwfActive ? 5 : 0;
@@ -163,8 +179,8 @@ export function EmployeeForm({ initialData }: { initialData?: Partial<Employee> 
       // ESI Employer Logic (Head 2): 3.25% ESI up to 21000; 0 if > 21000 or applyEsi is false
       const esiEmpr = (!isEsiActive || bp > 21000) ? 0 : Math.round(bp * 0.0325);
       
-      // PF Employer Logic: 12% if <= 15000; fixed 1800 if > 15000; 0 if applyPf is false
-      const pfEmpr = !isPfActive ? 0 : (bp > 15000 ? 1800 : Math.round(bp * 0.12));
+      // PF Employer Logic: 12% if <= 25000; fixed 3000 if > 25000; 0 if applyPf is false
+      const pfEmpr = !isPfActive ? 0 : (bp > 25000 ? 3000 : Math.round(bp * 0.12));
       
       // LWF Employer: 20 if active, 0 if false
       const lwfEmpr = isLwfActive ? 20 : 0;
@@ -209,7 +225,8 @@ export function EmployeeForm({ initialData }: { initialData?: Partial<Employee> 
       let mergedData: any = {
         ...rest,
         updatedAt: now,
-        status: data.status || 'active',
+        // An employee with a leaving date is always saved as inactive
+        status: data.dateOfLeaving ? 'inactive' : (data.status || 'active'),
       };
 
       if (isNew) {
@@ -227,6 +244,12 @@ export function EmployeeForm({ initialData }: { initialData?: Partial<Employee> 
     } catch (error) {
       console.error(error);
       toast.error('FAILED_TO_COMMIT_TRANSACTION');
+    }
+  };
+
+  const onInvalid = (formErrors: typeof errors) => {
+    if (formErrors.dateOfLeaving) {
+      toast.error('Invalid Date: Leaving date cannot be earlier than joining date');
     }
   };
 
@@ -257,7 +280,7 @@ export function EmployeeForm({ initialData }: { initialData?: Partial<Employee> 
         </Button>
       </div>
 
-      <form id="employee-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <form id="employee-form" onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-6">
         <input type="hidden" {...register('id')} />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Identity */}
@@ -288,7 +311,13 @@ export function EmployeeForm({ initialData }: { initialData?: Partial<Employee> 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="font-mono text-[10px] opacity-50">DATE_OF_BIRTH</Label>
-                  <Input type="date" {...register('dob')} className="rounded-none font-mono text-xs border-[#141414]/20" />
+                  <Input
+                    type="date"
+                    {...register('dob', {
+                      onChange: (e) => setValue('age', calculateAge(e.target.value), { shouldDirty: true })
+                    })}
+                    className="rounded-none font-mono text-xs border-[#141414]/20"
+                  />
                 </div>
                 <div>
                   <Label className="font-mono text-[10px] opacity-50">AGE</Label>
@@ -334,11 +363,44 @@ export function EmployeeForm({ initialData }: { initialData?: Partial<Employee> 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="font-mono text-[10px] opacity-50">JOINING_DATE</Label>
-                  <Input type="date" {...register('dateOfJoining')} className="rounded-none font-mono text-xs border-[#141414]/20" />
+                  <Input
+                    type="date"
+                    {...register('dateOfJoining', {
+                      // Re-check the leaving date whenever the joining date changes
+                      onChange: () => {
+                        if (getValues('dateOfLeaving')) trigger('dateOfLeaving');
+                      }
+                    })}
+                    className="rounded-none font-mono text-xs border-[#141414]/20"
+                  />
                 </div>
                 <div>
                   <Label className="font-mono text-[10px] opacity-50">LEAVING_DATE</Label>
-                  <Input type="date" {...register('dateOfLeaving')} className="rounded-none font-mono text-xs border-[#141414]/20" />
+                  <Input
+                    type="date"
+                    min={dateOfJoining || undefined}
+                    {...register('dateOfLeaving', {
+                      validate: (value) => {
+                        const joining = getValues('dateOfJoining');
+                        // ISO YYYY-MM-DD strings compare correctly as text
+                        return !value || !joining || value >= joining || 'Invalid Date';
+                      },
+                      onChange: (e) => {
+                        // Leaving date marks the employee as having left
+                        if (e.target.value) {
+                          setValue('status', 'inactive', { shouldDirty: true });
+                        }
+                        trigger('dateOfLeaving');
+                      }
+                    })}
+                    aria-invalid={!!errors.dateOfLeaving}
+                    className={`rounded-none font-mono text-xs ${errors.dateOfLeaving ? 'border-red-600' : 'border-[#141414]/20'}`}
+                  />
+                  {errors.dateOfLeaving && (
+                    <p className="font-mono text-[10px] font-bold text-red-600 mt-1">
+                      {errors.dateOfLeaving.message || 'Invalid Date'}
+                    </p>
+                  )}
                 </div>
               </div>
               <div>
@@ -398,22 +460,67 @@ export function EmployeeForm({ initialData }: { initialData?: Partial<Employee> 
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="font-mono text-[10px] opacity-50">DUTY_TIME</Label>
-                  <Input {...register('dutyTime')} placeholder="e.g. 09:00 AM" className="rounded-none font-mono text-xs border-[#141414]/20" />
+                  <Label className="font-mono text-[10px] opacity-50">DUTY_IN_TIME</Label>
+                  <Controller
+                    name="dutyTime"
+                    control={control}
+                    render={({ field }) => (
+                      <TimeAmPmInput
+                        value={field.value || ''}
+                        onChange={(val) => {
+                          field.onChange(val);
+                          updateDutyHours(val, watch('dutyOutTime'));
+                        }}
+                      />
+                    )}
+                  />
                 </div>
                 <div>
-                  <Label className="font-mono text-[10px] opacity-50">DUTY_HOURS</Label>
-                  <Input {...register('dutyHours')} placeholder="e.g. 8.5" className="rounded-none font-mono text-xs border-[#141414]/20" />
+                  <Label className="font-mono text-[10px] opacity-50">DUTY_OUT_TIME</Label>
+                  <Controller
+                    name="dutyOutTime"
+                    control={control}
+                    render={({ field }) => (
+                      <TimeAmPmInput
+                        value={field.value || ''}
+                        onChange={(val) => {
+                          field.onChange(val);
+                          updateDutyHours(watch('dutyTime'), val);
+                        }}
+                      />
+                    )}
+                  />
                 </div>
+              </div>
+              <div>
+                <Label className="font-mono text-[10px] opacity-50">DUTY_HOURS (AUTO)</Label>
+                <Input {...register('dutyHours')} placeholder="Fills from In/Out time" className="rounded-none font-mono text-xs border-[#141414]/20 bg-[#141414]/5" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="font-mono text-[10px] opacity-50">SHIFT_TIME</Label>
-                  <Input {...register('shiftTime')} placeholder="e.g. Day/Night" className="rounded-none font-mono text-xs border-[#141414]/20" />
+                  <select
+                    {...register('shiftTime')}
+                    className="w-full h-9 rounded-none bg-transparent border border-[#141414]/20 font-mono text-xs px-3 focus:outline-none focus:ring-1 focus:ring-[#141414]"
+                  >
+                    <option value="">SELECT_SHIFT</option>
+                    <option value="Day">Day</option>
+                    <option value="Night">Night</option>
+                  </select>
                 </div>
                 <div>
                   <Label className="font-mono text-[10px] opacity-50">TEA_TIME_ALLOWED</Label>
-                  <Input {...register('teaTimeAllowed')} placeholder="e.g. 30 mins" className="rounded-none font-mono text-xs border-[#141414]/20" />
+                  <Input
+                    {...register('teaTimeAllowed', {
+                      onChange: (e) => {
+                        const half = halfBreakTime(e.target.value);
+                        setValue('teaBreak1', half, { shouldDirty: true });
+                        setValue('teaBreak2', half, { shouldDirty: true });
+                      }
+                    })}
+                    placeholder="e.g. 30 mins"
+                    className="rounded-none font-mono text-xs border-[#141414]/20"
+                  />
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4">
@@ -429,20 +536,6 @@ export function EmployeeForm({ initialData }: { initialData?: Partial<Employee> 
                   <Label className="font-mono text-[10px] opacity-50">LUNCH_BREAK</Label>
                   <Input {...register('lunchBreak')} placeholder="Time" className="rounded-none font-mono text-xs border-[#141414]/20" />
                 </div>
-              </div>
-              <div>
-                <Label className="font-mono text-[10px] opacity-50">SHIFT_HOUR_OPTION</Label>
-                <select 
-                  {...register('shiftHours')} 
-                  className="w-full h-9 rounded-none bg-transparent border border-[#141414]/20 font-mono text-xs px-3 focus:outline-none focus:ring-1 focus:ring-[#141414]"
-                >
-                  <option value="">SELECT_HOURS</option>
-                  <option value="8">8 hrs</option>
-                  <option value="9">9 hrs</option>
-                  <option value="10">10 hrs</option>
-                  <option value="12">12 hrs</option>
-                  <option value="13">13 hrs</option>
-                </select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -510,7 +603,13 @@ export function EmployeeForm({ initialData }: { initialData?: Partial<Employee> 
                   </div>
                   <div>
                     <Label className="font-mono text-[8px] opacity-40">DOB</Label>
-                    <Input type="date" {...register('nominee.dob')} className="rounded-none font-mono text-[10px] h-8 border-[#141414]/20" />
+                    <Input
+                      type="date"
+                      {...register('nominee.dob', {
+                        onChange: (e) => setValue('nominee.age', calculateAge(e.target.value), { shouldDirty: true })
+                      })}
+                      className="rounded-none font-mono text-[10px] h-8 border-[#141414]/20"
+                    />
                   </div>
                 </div>
               </div>
@@ -561,7 +660,13 @@ export function EmployeeForm({ initialData }: { initialData?: Partial<Employee> 
                         </div>
                         <div>
                           <Label className="font-mono text-[8px] opacity-40 uppercase">DOB</Label>
-                          <Input type="date" {...register(`family.${index}.dob` as const)} className="rounded-none font-mono text-[10px] h-8 border-[#141414]/20 bg-white/50" />
+                          <Input
+                            type="date"
+                            {...register(`family.${index}.dob` as const, {
+                              onChange: (e) => setValue(`family.${index}.age` as const, calculateAge(e.target.value), { shouldDirty: true })
+                            })}
+                            className="rounded-none font-mono text-[10px] h-8 border-[#141414]/20 bg-white/50"
+                          />
                         </div>
                         <div>
                           <Label className="font-mono text-[8px] opacity-40 uppercase">MOBILE_NO</Label>
@@ -649,7 +754,7 @@ export function EmployeeForm({ initialData }: { initialData?: Partial<Employee> 
                 <div>
                   <div className="flex justify-between items-baseline mb-1">
                     <Label className="font-mono text-[10px] opacity-50">PF_EMPLOYEE (12%)</Label>
-                    <span className="font-mono text-[8px] opacity-40">Max ₹1800 if &gt; 15k</span>
+                    <span className="font-mono text-[8px] opacity-40">Max ₹3000 if &gt; 25k</span>
                   </div>
                   <Input 
                     type="number" 
@@ -724,7 +829,7 @@ export function EmployeeForm({ initialData }: { initialData?: Partial<Employee> 
                 <div>
                   <div className="flex justify-between items-baseline mb-1">
                     <Label className="font-mono text-[10px] opacity-50">PF_EMPLOYER (12%)</Label>
-                    <span className="font-mono text-[8px] opacity-40">Max ₹1800 if &gt; 15k</span>
+                    <span className="font-mono text-[8px] opacity-40">Max ₹3000 if &gt; 25k</span>
                   </div>
                   <Input 
                     type="number" 
@@ -807,6 +912,49 @@ export function EmployeeForm({ initialData }: { initialData?: Partial<Employee> 
           </Section>
         </div>
       </form>
+    </div>
+  );
+}
+
+// Clock text box (hh:mm) with AM/PM buttons that appear once a time is typed.
+// Stored as a single string, e.g. "09:30 AM".
+function TimeAmPmInput({ value, onChange }: { value: string, onChange: (value: string) => void }) {
+  const { time, period } = splitTime(value);
+
+  const emit = (t: string, p: Meridiem) => onChange(t ? (p ? `${t} ${p}` : t) : '');
+
+  const handleBlur = () => {
+    if (!time) return;
+    const normalized = normalizeClock(time, period);
+    emit(normalized.time, normalized.period);
+  };
+
+  return (
+    <div className="flex gap-1">
+      <Input
+        value={time}
+        onChange={(e) => emit(e.target.value.replace(/[^\d:.]/g, '').slice(0, 5), period)}
+        onBlur={handleBlur}
+        placeholder="hh:mm"
+        inputMode="numeric"
+        className="rounded-none font-mono text-xs border-[#141414]/20"
+      />
+      {time && (
+        <div className={`flex border ${period ? 'border-[#141414]/20' : 'border-amber-500 animate-pulse'}`}>
+          {(['AM', 'PM'] as const).map((p) => (
+            <button
+              key={p}
+              type="button"
+              onClick={() => emit(normalizeClock(time, p).time, p)}
+              className={`px-2 font-mono text-[10px] font-bold transition-colors ${
+                period === p ? 'bg-[#141414] text-[#E4E3E0]' : 'bg-transparent text-[#141414] hover:bg-[#141414]/10'
+              }`}
+            >
+              {p}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

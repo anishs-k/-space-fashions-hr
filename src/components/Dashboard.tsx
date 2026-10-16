@@ -2,7 +2,7 @@ import React from 'react';
 import { supabase, fetchAllRows } from '@/lib/supabase';
 import { Employee, NonEmployee } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Briefcase, TrendingUp, AlertCircle, Database, ClipboardList, UserPlus, ArrowRight, UserCheck } from 'lucide-react';
+import { Users, Briefcase, TrendingUp, AlertCircle, Database, ClipboardList, UserPlus, ArrowRight, UserCheck, UserX } from 'lucide-react';
 import { motion } from 'motion/react';
 import { seedDatabase, pdfSeedData, nonEmployeeSeedData } from '@/lib/seed';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ export function Dashboard() {
   const [stats, setStats] = React.useState({
     total: 0,
     active: 0,
+    inactive: 0,
     departments: 0,
     recentCount: 0,
     totalQueries: 0,
@@ -75,6 +76,7 @@ export function Dashboard() {
       setStats({
         total: employees.length,
         active: employees.filter(e => (e.status || 'active') === 'active').length,
+        inactive: employees.filter(e => e.status === 'inactive').length,
         departments: depts.size,
         recentCount: employees.filter(e => e.createdAt && new Date(e.createdAt as any) > weekAgo).length,
         totalQueries: candidates.length,
@@ -100,6 +102,7 @@ export function Dashboard() {
   const statCards = [
     { label: 'TOTAL_PERSONNEL', value: stats.total, icon: Users, color: 'text-blue-600' },
     { label: 'ACTIVE_ENTITIES', value: stats.active, icon: TrendingUp, color: 'text-green-600' },
+    { label: 'INACTIVE_LEFT', value: stats.inactive, icon: UserX, color: 'text-red-600' },
     { label: 'CANDIDATE_QUERIES', value: stats.totalQueries, icon: ClipboardList, color: 'text-amber-600' },
     { label: 'OFFERED_TO_JOIN', value: stats.offeredQueries, icon: UserCheck, color: 'text-purple-600' }
   ];
@@ -125,7 +128,7 @@ export function Dashboard() {
       </div>
 
       {/* Primary KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
         {statCards.map((stat, i) => (
           <motion.div
             key={stat.label}

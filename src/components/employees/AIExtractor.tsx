@@ -30,12 +30,12 @@ export function AIExtractor() {
 
     if (bp > 0) {
       const esiEmp = (!applyEsi || bp > 21000) ? 0 : Math.round(bp * 0.0075);
-      const pfEmp = !applyPf ? 0 : (bp > 15000 ? 1800 : Math.round(bp * 0.12));
+      const pfEmp = !applyPf ? 0 : (bp > 25000 ? 3000 : Math.round(bp * 0.12));
       const lwfEmp = applyLwf ? 5 : 0;
       const netCash = bp - (esiEmp + pfEmp + lwfEmp);
 
       const esiEmployer = (!applyEsi || bp > 21000) ? 0 : Math.round(bp * 0.0325);
-      const pfEmployer = !applyPf ? 0 : (bp > 15000 ? 1800 : Math.round(bp * 0.12));
+      const pfEmployer = !applyPf ? 0 : (bp > 25000 ? 3000 : Math.round(bp * 0.12));
       const lwfEmployer = applyLwf ? 20 : 0;
       const ctc = bp + esiEmployer + pfEmployer + lwfEmployer + lwwAmt + bonusAmt;
 

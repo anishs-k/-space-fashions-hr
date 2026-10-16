@@ -34,14 +34,14 @@ Return the data in a structured JSON format following this schema:
       "employeeCode": string,
       "category": "Staff" | "Worker" | "PC Rate",
       "experience": string,
-      "dutyTime": string,
+      "dutyTime": string (duty IN time, format "hh:mm AM/PM"),
+      "dutyOutTime": string (duty OUT time, format "hh:mm AM/PM"),
       "dutyHours": string,
-      "shiftTime": string,
+      "shiftTime": "Day" | "Night",
       "teaTimeAllowed": string,
       "teaBreak1": string,
       "teaBreak2": string,
       "lunchBreak": string,
-      "shiftHours": "8" | "9" | "10" | "12" | "13",
       "overtimeAllowed": boolean,
       "overtimeHours": string,
       "esi": string (under Old ESI),
@@ -77,8 +77,8 @@ Return the data in a structured JSON format following this schema:
   ]
 }
 Statutory Rules for Office Use Only:
-- Head 1 (Employee Share): PF is 12% of basic if basic <= 15000, fixed 1800 if basic > 15000. ESI is 0.75% of basic if basic <= 21000, 0 if basic > 21000. LWF employee is 5. Net Cash in Hand = basic - (esiEmployee + pfEmployee + lwfEmployee).
-- Head 2 (Employer Share): ESI is 3.25% of basic if basic <= 21000, 0 if basic > 21000. PF is 12% of basic (fixed 1800 if basic > 15000). LWF employer is 20. Total CTC = basic + esiEmployer + pfEmployer + lwfEmployer + lwwAmount + bonus.
+- Head 1 (Employee Share): PF is 12% of basic if basic <= 25000, fixed 3000 if basic > 25000. ESI is 0.75% of basic if basic <= 21000, 0 if basic > 21000. LWF employee is 5. Net Cash in Hand = basic - (esiEmployee + pfEmployee + lwfEmployee).
+- Head 2 (Employer Share): ESI is 3.25% of basic if basic <= 21000, 0 if basic > 21000. PF is 12% of basic if basic <= 25000, fixed 3000 if basic > 25000. LWF employer is 20. Total CTC = basic + esiEmployer + pfEmployer + lwfEmployer + lwwAmount + bonus.
 Look specifically for "SPACE FASHIONS LIMITED" headers to distinguish between records. Extract the entire table for Office Use Only.`;
 
 function cleanAndParseJSON(rawText: string) {

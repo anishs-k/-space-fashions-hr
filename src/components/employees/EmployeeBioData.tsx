@@ -61,13 +61,13 @@ export function EmployeeBioData({ employee }: EmployeeBioDataProps) {
 
   // Head 1 (Employee Share)
   const esiEmployee = (!isEsiActive || bp > 21000) ? 0 : Math.round(bp * 0.0075);
-  const pfEmployee = !isPfActive ? 0 : (bp > 15000 ? 1800 : Math.round(bp * 0.12));
+  const pfEmployee = !isPfActive ? 0 : (bp > 25000 ? 3000 : Math.round(bp * 0.12));
   const lwfEmployee = isLwfActive && bp > 0 ? 5 : 0;
   const netCash = bp > 0 ? (bp - (esiEmployee + pfEmployee + lwfEmployee)) : 0;
 
   // Head 2 (Employer Share)
   const esiEmployer = (!isEsiActive || bp > 21000) ? 0 : Math.round(bp * 0.0325);
-  const pfEmployer = !isPfActive ? 0 : (bp > 15000 ? 1800 : Math.round(bp * 0.12));
+  const pfEmployer = !isPfActive ? 0 : (bp > 25000 ? 3000 : Math.round(bp * 0.12));
   const lwfEmployer = isLwfActive && bp > 0 ? 20 : 0;
   const totalCTC = bp > 0 ? (bp + esiEmployer + pfEmployer + lwfEmployer + lwwAmount + bonus) : 0;
 
@@ -342,7 +342,11 @@ export function EmployeeBioData({ employee }: EmployeeBioDataProps) {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <span className="block font-mono text-[9px] uppercase opacity-40">Duty Timings</span>
-                  <span>{employee.dutyTime || 'N/A'}</span>
+                  <span>
+                    {employee.dutyTime || employee.dutyOutTime
+                      ? `${employee.dutyTime || 'N/A'} – ${employee.dutyOutTime || 'N/A'}`
+                      : 'N/A'}
+                  </span>
                 </div>
                 <div>
                   <span className="block font-mono text-[9px] uppercase opacity-40">Duty Hours</span>

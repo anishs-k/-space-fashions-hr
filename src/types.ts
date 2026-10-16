@@ -79,14 +79,14 @@ export interface Employee {
   category?: EmployeeCategory;
   dateOfJoining: string;
   dateOfLeaving?: string;
-  dutyTime?: string;
+  dutyTime?: string; // Duty IN time, e.g. "09:00 AM"
+  dutyOutTime?: string; // Duty OUT time, e.g. "05:30 PM"
   dutyHours?: string;
   shiftTime?: string;
   teaTimeAllowed?: string;
   teaBreak1?: string;
   teaBreak2?: string;
   lunchBreak?: string;
-  shiftHours?: '8' | '9' | '10' | '12' | '13';
   overtimeAllowed?: boolean;
   overtimeHours?: string;
   officeUse: OfficeUseDetails;

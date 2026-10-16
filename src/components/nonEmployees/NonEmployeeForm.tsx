@@ -103,16 +103,16 @@ export function NonEmployeeForm({ initialData, onSuccess, onConvertToEmployee }:
       esiEmpr = Math.round(salary * 0.0325);
     }
 
-    // PF Rules: Employee 12% (max 1800 if salary > 15000), Employer 12% (max 1800)
+    // PF Rules: Employee & Employer 12% of salary if <= 25000; fixed 3000 if > 25000
     let pfEmp = 0;
     let pfEmpr = 0;
     if (isPf && salary > 0) {
-      if (salary <= 15000) {
+      if (salary <= 25000) {
         pfEmp = Math.round(salary * 0.12);
         pfEmpr = Math.round(salary * 0.12);
       } else {
-        pfEmp = 1800;
-        pfEmpr = 1800;
+        pfEmp = 3000;
+        pfEmpr = 3000;
       }
     }
 
@@ -622,7 +622,7 @@ export function NonEmployeeForm({ initialData, onSuccess, onConvertToEmployee }:
               {/* 26. PF */}
               <div className="space-y-2 p-3 border border-[#141414]/20 bg-[#141414]/5">
                 <div className="flex justify-between items-baseline">
-                  <Label className="text-xs font-bold font-mono">26. Pf (12% max 1800)</Label>
+                  <Label className="text-xs font-bold font-mono">26. Pf (12% max 3000)</Label>
                   <span className="text-[9px] opacity-50">12% / Capped</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
