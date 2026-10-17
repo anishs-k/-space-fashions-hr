@@ -1,5 +1,6 @@
 import React from 'react';
 import { NonEmployee } from '@/types';
+import { formatDateDisplay } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Printer, ArrowLeft, CheckCircle2, XCircle } from 'lucide-react';
 
@@ -42,7 +43,7 @@ export function NonEmployeeSlip({ data, onBack }: NonEmployeeSlipProps) {
             Non-employee query
           </h2>
           <p className="text-[10px] opacity-70">
-            RECORD REF: <span className="font-bold">{data.srNo || data.id}</span> | REGISTERED: {data.dateOfApplication || 'N/A'}
+            RECORD REF: <span className="font-bold">{data.srNo || data.id}</span> | REGISTERED: {formatDateDisplay(data.dateOfApplication)}
           </p>
         </div>
 
@@ -91,7 +92,7 @@ export function NonEmployeeSlip({ data, onBack }: NonEmployeeSlipProps) {
             </div>
             <div className="p-2.5 flex justify-between">
               <span className="font-bold">9. Date of application:</span>
-              <span>{data.dateOfApplication || '-'}</span>
+              <span>{data.dateOfApplication ? formatDateDisplay(data.dateOfApplication) : '-'}</span>
             </div>
 
             <div className="p-2.5 flex justify-between">
@@ -140,7 +141,7 @@ export function NonEmployeeSlip({ data, onBack }: NonEmployeeSlipProps) {
             <div className="grid grid-cols-2 divide-x divide-y divide-black">
               <div className="p-2.5 flex justify-between">
                 <span className="font-bold">18. Interview date:</span>
-                <span>{data.interviewDate || '-'}</span>
+                <span>{data.interviewDate ? formatDateDisplay(data.interviewDate) : '-'}</span>
               </div>
               <div className="p-2.5 flex justify-between">
                 <span className="font-bold">19. Interview taken by:</span>

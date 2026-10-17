@@ -2,7 +2,7 @@ import React from 'react';
 import { Employee } from '@/types';
 import { Printer, Check, X, ShieldAlert, Award, CreditCard, Users2, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { formatDateDisplay, normalizeDate } from '@/lib/utils';
+import { formatDateDisplay, normalizeDate, calculatePayableDutyHours } from '@/lib/utils';
 
 interface EmployeeBioDataProps {
   employee: Employee;
@@ -115,6 +115,8 @@ export function EmployeeBioData({ employee }: EmployeeBioDataProps) {
   const esiId = employee.esi || empAny.esi_no || 'N/A';
   const pfId = employee.pf || empAny.pf_no || 'N/A';
   const uanId = employee.uan || empAny.uan_no || 'N/A';
+  const payableDutyHours = employee.payableDutyHours ||
+    calculatePayableDutyHours(employee.dutyHours, employee.teaTimeAllowed, employee.lunchBreak, employee.teaBreak1, employee.teaBreak2);
 
   return (
     <div className="space-y-6">
@@ -130,7 +132,7 @@ export function EmployeeBioData({ employee }: EmployeeBioDataProps) {
       </div>
 
       {/* Printable Sheet Container */}
-      <div id="print-sheet" className="bg-white text-[#141414] border-2 border-double border-[#141414] p-8 md:p-12 font-serif max-w-4xl mx-auto shadow-sm relative overflow-hidden print:border-none print:p-0 print:shadow-none">
+      <div id="print-sheet" className="bg-white text-[#141414] border-2 border-double border-[#141414] p-8 md:p-12 font-serif max-w-4xl mx-auto shadow-sm relative overflow-hidden print:border-none print:px-[12mm] print:py-[10mm] print:shadow-none print:max-w-none print:w-full print:overflow-visible print:box-decoration-clone">
         
         {/* Aesthetic Background Stamp for Official Quality */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.015] pointer-events-none transform -rotate-12 select-none">
@@ -138,22 +140,22 @@ export function EmployeeBioData({ employee }: EmployeeBioDataProps) {
         </div>
 
         {/* Form Header */}
-        <div className="text-center border-b-2 border-dashed border-[#141414] pb-6 mb-8 space-y-2">
+        <div className="text-center border-b-2 border-dashed border-[#141414] pb-6 mb-8 space-y-2 print:pb-4 print:mb-5 print-avoid-break">
           <h1 className="text-3xl tracking-wide uppercase font-bold text-center">Space Fashions Limited</h1>
           <p className="text-[10px] tracking-wide">E-439-440, Focal Point, Phase-6, Ludhiana-141010.</p>
           <p className="font-mono text-xs uppercase tracking-widest opacity-60">Personnel Registry & Professional Bio-Data Form</p>
           <div className="flex justify-between items-center pt-4 font-mono text-[9px] opacity-50 uppercase">
             <span>Doc Code: SFL/HR/REC/{employeeCode}</span>
             <span>Ref protocol: ERP-4.1.2</span>
-            <span>Date Generated: {new Date().toLocaleDateString()}</span>
+            <span>Date Generated: {formatDateDisplay(new Date().toLocaleDateString('en-GB'))}</span>
           </div>
         </div>
 
         {/* Two-Column Primary Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start print:grid-cols-12 print:gap-6">
           
           {/* Left Column (Personal particulars) */}
-          <div className="md:col-span-8 space-y-6">
+          <div className="md:col-span-8 space-y-6 print:col-span-8 print:space-y-4">
             <div>
               <div className="flex items-center gap-2 border-b border-[#141414]/20 pb-1.5 mb-3">
                 <Users2 className="w-4 h-4 opacity-50" />
@@ -245,7 +247,7 @@ export function EmployeeBioData({ employee }: EmployeeBioDataProps) {
           </div>
 
           {/* Right Column (Photo placeholder, category, dates) */}
-          <div className="md:col-span-4 space-y-6">
+          <div className="md:col-span-4 space-y-6 print:col-span-4 print:space-y-4 print-avoid-break">
             {/* Visual Photo Frame */}
             <div className="flex flex-col items-center">
               <div className="w-32 h-36 border-2 border-dashed border-[#141414]/30 flex flex-col items-center justify-center p-1 bg-[#141414]/5 relative overflow-hidden">
@@ -272,7 +274,7 @@ export function EmployeeBioData({ employee }: EmployeeBioDataProps) {
               {employee.dateOfLeaving && (
                 <div className="border-t border-[#141414]/10 pt-2">
                   <span className="block font-mono text-[8px] uppercase opacity-50 text-red-700">Date of Leaving</span>
-                  <span className="font-mono font-bold text-red-700">{employee.dateOfLeaving}</span>
+                  <span className="font-mono font-bold text-red-700">{formatDateDisplay(employee.dateOfLeaving)}</span>
                 </div>
               )}
               <div className="border-t border-[#141414]/10 pt-2 flex justify-between items-center">
@@ -286,10 +288,10 @@ export function EmployeeBioData({ employee }: EmployeeBioDataProps) {
         </div>
 
         {/* Divider Line */}
-        <hr className="my-8 border-t-2 border-[#141414]" />
+        <hr className="my-8 border-t-2 border-[#141414] print:my-5" />
 
         {/* Languages & Breaks Segmented Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 print:grid-cols-2 print:gap-6">
           
           {/* Languages Proficiency Card */}
           <div>
@@ -373,25 +375,23 @@ export function EmployeeBioData({ employee }: EmployeeBioDataProps) {
                   <span className="block font-mono text-[9px] uppercase opacity-40">Overtime Allowed</span>
                   <span className="font-mono text-xs">{renderCheckValue(!!employee.overtimeAllowed)}</span>
                 </div>
-                {employee.overtimeAllowed && (
-                  <div>
-                    <span className="block font-mono text-[9px] uppercase opacity-40">Overtime Details</span>
-                    <span className="italic">{employee.overtimeHours || 'N/A'}</span>
-                  </div>
-                )}
+                <div>
+                  <span className="block font-mono text-[9px] uppercase opacity-40">Payable Duty Hours</span>
+                  <span className="font-bold">{payableDutyHours ? `${payableDutyHours} Hours` : 'N/A'}</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
         {/* Family particulars Section */}
-        <div className="mt-8">
+        <div className="mt-8 print:mt-5 print-avoid-break">
           <div className="flex items-center gap-2 border-b border-[#141414]/20 pb-1.5 mb-3">
             <h3 className="font-mono text-[10px] uppercase font-bold tracking-widest opacity-70">06. Nominee & Family particulars</h3>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm mb-4">
-            <div className="md:col-span-1 bg-[#141414]/5 p-3 border border-[#141414]/15">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm mb-4 print:grid-cols-3 print:gap-4">
+            <div className="md:col-span-1 print:col-span-1 bg-[#141414]/5 p-3 border border-[#141414]/15">
               <span className="block font-mono text-[8px] uppercase opacity-55 font-bold mb-1">Declared Nominee</span>
               <p className="font-bold">{nominee.name}</p>
               <div className="flex justify-between items-center mt-2 text-xs font-mono opacity-60">
@@ -400,7 +400,7 @@ export function EmployeeBioData({ employee }: EmployeeBioDataProps) {
               </div>
             </div>
 
-            <div className="md:col-span-2">
+            <div className="md:col-span-2 print:col-span-2">
               {family.length === 0 ? (
                 <div className="text-center py-6 border border-dashed border-[#141414]/15 italic text-xs text-[#141414]/40">
                   No registered family members listed in official bio-data.
@@ -434,7 +434,7 @@ export function EmployeeBioData({ employee }: EmployeeBioDataProps) {
         </div>
 
         {/* Divider Line */}
-        <hr className="my-8 border-t-2 border-[#141414]" />
+        <hr className="my-8 border-t-2 border-[#141414] print:my-5" />
 
         {/* Office Use and Compensation details */}
         <div>
@@ -443,10 +443,10 @@ export function EmployeeBioData({ employee }: EmployeeBioDataProps) {
             <h3 className="font-mono text-[10px] uppercase font-bold tracking-widest opacity-70">07. Statutory Registry & Compensation Detail</h3>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start print:grid-cols-12 print:gap-4">
             
             {/* Statutory identifiers */}
-            <div className="md:col-span-5 space-y-4">
+            <div className="md:col-span-5 space-y-4 print:col-span-5 print-avoid-break">
               <div className="bg-[#141414]/5 p-3 border border-[#141414]/10 space-y-2.5 text-xs">
                 <span className="block font-mono text-[8px] uppercase font-bold opacity-60 border-b border-[#141414]/15 pb-1">Statutory IDs</span>
                 <div className="flex justify-between font-mono">
@@ -472,7 +472,7 @@ export function EmployeeBioData({ employee }: EmployeeBioDataProps) {
             </div>
 
             {/* Financial Ledger Calculation Sheet */}
-            <div className="md:col-span-7 border border-[#141414] bg-[#141414]/[0.02] p-4 text-xs font-mono space-y-3">
+            <div className="md:col-span-7 print:col-span-7 print-avoid-break border border-[#141414] bg-[#141414]/[0.02] p-4 text-xs font-mono space-y-3">
               <div className="flex justify-between items-center border-b border-[#141414] pb-2">
                 <span className="font-bold">COMPENSATION BREAKDOWN</span>
                 <span className="inline-flex items-center justify-center rounded-none text-[8px] border border-[#141414]/30 px-1.5 py-0.5 font-bold">OFFICE ONLY</span>
@@ -546,7 +546,7 @@ export function EmployeeBioData({ employee }: EmployeeBioDataProps) {
         </div>
 
         {/* Validation Footers - Signature pads */}
-        <div className="mt-16 pt-12 border-t border-[#141414]/30 grid grid-cols-2 gap-12 font-mono text-[10px] uppercase text-center">
+        <div className="mt-16 pt-12 print:mt-8 print:pt-6 print-avoid-break border-t border-[#141414]/30 grid grid-cols-2 gap-12 font-mono text-[10px] uppercase text-center">
           <div className="space-y-12">
             <div className="border-b border-[#141414]/40 pb-1 h-8"></div>
             <span>Signature of Candidate / Executing Worker</span>
@@ -560,7 +560,7 @@ export function EmployeeBioData({ employee }: EmployeeBioDataProps) {
         </div>
 
         {/* Safety watermark */}
-        <div className="mt-12 text-center text-[8.5px] font-mono opacity-30 uppercase tracking-widest border-t border-dotted border-[#141414]/10 pt-4 flex items-center justify-center gap-1">
+        <div className="mt-12 print:mt-6 text-center text-[8.5px] font-mono opacity-30 uppercase tracking-widest border-t border-dotted border-[#141414]/10 pt-4 flex items-center justify-center gap-1">
           <ShieldAlert className="w-3 h-3 text-red-700 shrink-0" />
           This document is protected under state labor compliance. Standard digital audit trials apply.
         </div>

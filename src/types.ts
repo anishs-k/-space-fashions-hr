@@ -87,6 +87,7 @@ export interface Employee {
   teaBreak1?: string;
   teaBreak2?: string;
   lunchBreak?: string;
+  payableDutyHours?: string; // dutyHours − (tea time + lunch break)
   overtimeAllowed?: boolean;
   overtimeHours?: string;
   officeUse: OfficeUseDetails;

@@ -30,8 +30,8 @@ export function normalizeDate(raw: any): string {
     }
   }
 
-  // DD-MM-YYYY or D-M-YYYY format (most common from bio data Excel)
-  const dashMatch = str.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+  // DD-MM-YYYY / D-M-YYYY (most common from bio data Excel) or DD:MM:YYYY (display format)
+  const dashMatch = str.match(/^(\d{1,2})[-:](\d{1,2})[-:](\d{4})$/);
   if (dashMatch) {
     const [, d, m, y] = dashMatch.map(Number);
     if (y > 1900 && m >= 1 && m <= 12 && d >= 1 && d <= 31) {
@@ -154,32 +154,58 @@ export function calculateDutyHours(inTime: any, outTime: any): string {
 }
 
 /**
- * Splits a total break time into two equal breaks, e.g. "30 mins" → "15 mins".
- * Understands "30", "30 mins", "1 hr", "1 hr 30 min". Returns '' if unreadable.
+ * Reads a break duration as minutes.
+ * Understands "30", "30 mins", "1 hr", "1 hr 30 min". Returns null if unreadable.
  */
-export function halfBreakTime(raw: any): string {
+export function breakToMinutes(raw: any): number | null {
   const str = String(raw ?? '').toLowerCase().trim();
-  if (!str) return '';
+  if (!str) return null;
 
   const hrMatch = str.match(/(\d+(?:\.\d+)?)\s*h/);
   const minMatch = str.match(/(\d+(?:\.\d+)?)\s*m/);
-  let totalMinutes: number;
-
   if (hrMatch || minMatch) {
-    totalMinutes = (hrMatch ? Number(hrMatch[1]) * 60 : 0) + (minMatch ? Number(minMatch[1]) : 0);
-  } else {
-    const num = str.match(/^(\d+(?:\.\d+)?)$/);
-    if (!num) return '';
-    totalMinutes = Number(num[1]);
+    return (hrMatch ? Number(hrMatch[1]) * 60 : 0) + (minMatch ? Number(minMatch[1]) : 0);
   }
 
+  const num = str.match(/^(\d+(?:\.\d+)?)$/);
+  return num ? Number(num[1]) : null;
+}
+
+/**
+ * Splits a total break time into two equal breaks, e.g. "30 mins" → "15 mins".
+ * Returns '' if unreadable.
+ */
+export function halfBreakTime(raw: any): string {
+  const totalMinutes = breakToMinutes(raw);
   if (!totalMinutes) return '';
   const half = Math.round((totalMinutes / 2) * 10) / 10;
   return `${half} mins`;
 }
 
 /**
- * Formats a date string for human-readable display (DD-MM-YYYY).
+ * Payable duty hours = duty hours − (tea time allowed + lunch break), e.g. "9" − (30 + 30 mins) = "8".
+ * Tea time falls back to tea break 1 + tea break 2 when the total isn't filled.
+ * Returns '' when duty hours are missing.
+ */
+export function calculatePayableDutyHours(
+  dutyHours: any,
+  teaTimeAllowed: any,
+  lunchBreak: any,
+  teaBreak1?: any,
+  teaBreak2?: any
+): string {
+  const duty = Number(String(dutyHours ?? '').trim());
+  if (!duty || isNaN(duty)) return '';
+
+  const tea = breakToMinutes(teaTimeAllowed) ?? ((breakToMinutes(teaBreak1) || 0) + (breakToMinutes(teaBreak2) || 0));
+  const lunch = breakToMinutes(lunchBreak) || 0;
+
+  const payableMinutes = Math.max(0, duty * 60 - tea - lunch);
+  return String(Math.round((payableMinutes / 60) * 100) / 100);
+}
+
+/**
+ * Formats a date string for human-readable display (DD:MM:YYYY).
  * Accepts any format that normalizeDate() can handle.
  * Returns original string if it can't be parsed.
  */
@@ -193,5 +219,5 @@ export function formatDateDisplay(raw: any): string {
   }
 
   const [y, m, d] = iso.split('-');
-  return `${d}-${m}-${y}`;
+  return `${d}:${m}:${y}`;
 }

@@ -135,3 +135,32 @@
     @apply font-sans;
     }
 }
+/* ---------- Print (A4) ---------- */
+@media print {
+  /* Zero page margin hides the browser's URL / title / date header & footer;
+     the sheet's own padding (cloned on every page) provides the visible margin. */
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .print-avoid-break,
+  #print-sheet table,
+  #print-sheet tr,
+  #print-sheet img {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  #print-sheet h3 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+}

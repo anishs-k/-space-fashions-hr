@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { toast } from 'sonner';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Save, User, Briefcase, MapPin, Phone, ClipboardCheck, Users, Clock, Plus, Trash2, Languages as LanguagesIcon, Calculator, RefreshCw } from 'lucide-react';
-import { normalizeDate, calculateAge, splitTime, normalizeClock, calculateDutyHours, halfBreakTime, Meridiem } from '@/lib/utils';
+import { normalizeDate, calculateAge, splitTime, normalizeClock, calculateDutyHours, calculatePayableDutyHours, halfBreakTime, Meridiem } from '@/lib/utils';
 
 const emptyDefaultValues = {
   status: 'active' as EmployeeStatus,
@@ -148,6 +148,20 @@ export function EmployeeForm({ initialData }: { initialData?: Partial<Employee> 
     const hours = calculateDutyHours(inTime, outTime);
     if (hours) setValue('dutyHours', hours, { shouldDirty: true });
   };
+
+  // Payable duty hours = duty hours − (tea time + lunch break), recalculated on any change
+  const dutyHours = watch('dutyHours');
+  const teaTimeAllowed = watch('teaTimeAllowed');
+  const teaBreak1 = watch('teaBreak1');
+  const teaBreak2 = watch('teaBreak2');
+  const lunchBreak = watch('lunchBreak');
+
+  React.useEffect(() => {
+    const payable = calculatePayableDutyHours(dutyHours, teaTimeAllowed, lunchBreak, teaBreak1, teaBreak2);
+    if (payable !== (getValues('payableDutyHours') || '')) {
+      setValue('payableDutyHours', payable, { shouldDirty: true });
+    }
+  }, [dutyHours, teaTimeAllowed, teaBreak1, teaBreak2, lunchBreak, setValue, getValues]);
 
   const { fields, append, remove } = useFieldArray({
     control,
@@ -549,8 +563,8 @@ export function EmployeeForm({ initialData }: { initialData?: Partial<Employee> 
                   </select>
                 </div>
                 <div>
-                  <Label className="font-mono text-[10px] opacity-50">OVERTIME_HOURS (IF_YES)</Label>
-                  <Input {...register('overtimeHours')} placeholder="e.g. 2 hrs/day" className="rounded-none font-mono text-xs border-[#141414]/20" />
+                  <Label className="font-mono text-[10px] opacity-50">PAYABLE DUTY HOURS</Label>
+                  <Input {...register('payableDutyHours')} readOnly placeholder="Duty hours − tea − lunch" className="rounded-none font-mono text-xs border-[#141414]/20 bg-[#141414]/5" />
                 </div>
               </div>
             </div>

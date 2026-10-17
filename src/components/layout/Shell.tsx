@@ -200,7 +200,7 @@ export function Shell({ children }: ShellProps) {
         </header>
 
         {/* Content Area */}
-        <div className="flex-1 min-w-0 p-6 overflow-auto print:p-0">
+        <div className="flex-1 min-w-0 p-6 overflow-auto print:p-0 print:overflow-visible">
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
