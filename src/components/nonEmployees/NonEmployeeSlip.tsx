@@ -36,9 +36,10 @@ export function NonEmployeeSlip({ data, onBack }: NonEmployeeSlipProps) {
       <div className="bg-white text-black p-8 border-2 border-black font-mono text-xs space-y-6 shadow-sm">
         {/* Header */}
         <div className="text-center border-b-2 border-black pb-4 space-y-1">
-          <h1 className="font-serif italic text-2xl font-bold uppercase tracking-wider">SPACE FASHIONS</h1>
+          <h1 className="font-serif italic text-2xl font-bold uppercase tracking-wider">SPACE FASHIONS LIMITED</h1>
+          <p className="text-[10px] tracking-wide">E-439-440, Focal Point, Phase-6, Ludhiana-141010.</p>
           <h2 className="text-sm font-bold uppercase tracking-wide">
-            Category Employee query/ Non-employee data base
+            Non-employee query
           </h2>
           <p className="text-[10px] opacity-70">
             RECORD REF: <span className="font-bold">{data.srNo || data.id}</span> | REGISTERED: {data.dateOfApplication || 'N/A'}

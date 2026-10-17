@@ -202,7 +202,7 @@ export function NonEmployeeForm({ initialData, onSuccess, onConvertToEmployee }:
           <div className="flex items-center gap-2">
             <ClipboardList className="w-5 h-5 text-[#141414]" />
             <h2 className="font-serif italic text-2xl font-bold tracking-tight">
-              Category Employee query/ Non-employee data base
+              Non-employee query
             </h2>
           </div>
           <p className="text-[11px] opacity-60 mt-1">

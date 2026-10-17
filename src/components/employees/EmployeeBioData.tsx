@@ -140,6 +140,7 @@ export function EmployeeBioData({ employee }: EmployeeBioDataProps) {
         {/* Form Header */}
         <div className="text-center border-b-2 border-dashed border-[#141414] pb-6 mb-8 space-y-2">
           <h1 className="text-3xl tracking-wide uppercase font-bold text-center">Space Fashions Limited</h1>
+          <p className="text-[10px] tracking-wide">E-439-440, Focal Point, Phase-6, Ludhiana-141010.</p>
           <p className="font-mono text-xs uppercase tracking-widest opacity-60">Personnel Registry & Professional Bio-Data Form</p>
           <div className="flex justify-between items-center pt-4 font-mono text-[9px] opacity-50 uppercase">
             <span>Doc Code: SFL/HR/REC/{employeeCode}</span>
