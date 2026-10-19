@@ -44,6 +44,18 @@ const emptyDefaultValues = {
   }
 };
 
+// Shared layout for the NAME | GENDER | RELATION row of nominee and family members
+const nameGenderRelationGrid = 'grid grid-cols-1 sm:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,1fr)] gap-2';
+const smallSelectClass = 'w-full h-8 rounded-none border border-[#141414]/20 font-mono text-[10px] px-2 focus:outline-none focus:ring-1 focus:ring-[#141414]';
+const genderOptions = (
+  <>
+    <option value="">SELECT</option>
+    <option value="Male">Male</option>
+    <option value="Female">Female</option>
+    <option value="Other">Other</option>
+  </>
+);
+
 // Maps older free-text shift values ("day", "DAY SHIFT", "night", ...) to the dropdown options
 const normalizeShift = (raw: any): string => {
   const str = String(raw ?? '').toLowerCase();
@@ -90,7 +102,7 @@ const getFormDefaults = (initial?: Partial<Employee>): Partial<Employee> => {
           ...initial.nominee,
           dob: normalizeDate(initial.nominee.dob)
         }
-      : { name: '', age: 0, dob: '', relation: '' }
+      : { name: '', gender: '', age: 0, dob: '', relation: '' }
   };
 };
 
@@ -636,15 +648,23 @@ export function EmployeeForm({ initialData }: { initialData?: Partial<Employee> 
             <div className="space-y-4">
               <div>
                 <Label className="font-mono text-[10px] opacity-55 font-bold">NOMINEE_DETAILS</Label>
-                <div className="grid grid-cols-2 gap-2 mt-2">
+                <div className={`${nameGenderRelationGrid} mt-2`}>
                   <div>
                     <Label className="font-mono text-[8px] opacity-40">NAME</Label>
                     <Input {...register('nominee.name')} className="rounded-none font-mono text-[10px] h-8 border-[#141414]/20" />
                   </div>
                   <div>
+                    <Label className="font-mono text-[8px] opacity-40">GENDER</Label>
+                    <select {...register('nominee.gender')} className={`${smallSelectClass} bg-transparent`}>
+                      {genderOptions}
+                    </select>
+                  </div>
+                  <div>
                     <Label className="font-mono text-[8px] opacity-40">RELATION</Label>
                     <Input {...register('nominee.relation')} className="rounded-none font-mono text-[10px] h-8 border-[#141414]/20" />
                   </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 mt-2">
                   <div>
                     <Label className="font-mono text-[8px] opacity-40">DOB</Label>
                     <Controller
@@ -677,7 +697,7 @@ export function EmployeeForm({ initialData }: { initialData?: Partial<Employee> 
                     type="button" 
                     variant="outline" 
                     size="sm" 
-                    onClick={() => append({ name: '', relation: '', age: 0, dob: '', mobileNumber: '' })}
+                    onClick={() => append({ name: '', gender: '', relation: '', age: 0, dob: '', mobileNumber: '' })}
                     className="h-6 rounded-none font-mono text-[8px] gap-1 px-2 border-[#141414]/20"
                   >
                     <Plus className="w-2 h-2" />
@@ -698,10 +718,16 @@ export function EmployeeForm({ initialData }: { initialData?: Partial<Employee> 
                         </button>
                       )}
                       
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className={`${nameGenderRelationGrid} pr-4`}>
                         <div>
                           <Label className="font-mono text-[8px] opacity-40 uppercase">NAME</Label>
                           <Input {...register(`family.${index}.name` as const)} className="rounded-none font-mono text-[10px] h-8 border-[#141414]/20 bg-white/50" />
+                        </div>
+                        <div>
+                          <Label className="font-mono text-[8px] opacity-40 uppercase">GENDER</Label>
+                          <select {...register(`family.${index}.gender` as const)} className={`${smallSelectClass} bg-white/50`}>
+                            {genderOptions}
+                          </select>
                         </div>
                         <div>
                           <Label className="font-mono text-[8px] opacity-40 uppercase">RELATION</Label>

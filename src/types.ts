@@ -23,6 +23,7 @@ export interface OfficeUseDetails {
 
 export interface NomineeDetails {
   name: string;
+  gender?: 'Male' | 'Female' | 'Other' | '';
   age: number;
   dob: string;
   relation: string;
@@ -30,6 +31,7 @@ export interface NomineeDetails {
 
 export interface FamilyMember {
   name: string;
+  gender?: 'Male' | 'Female' | 'Other' | '';
   age: number;
   dob: string;
   relation: string;
