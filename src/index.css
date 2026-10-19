@@ -205,4 +205,57 @@
     break-after: avoid;
     page-break-after: avoid;
   }
+
+  /* ----- Non-Employee Query sheet ----- */
+  .query-sheet {
+    margin: 8mm 10mm;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+
+  /* Keep dark header bars, grey rows and borders in the printout */
+  .query-sheet,
+  .query-sheet * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Two fixed 50% columns, never stacked or shrunk */
+  .query-sheet .qs-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  /* Label and value stay on one line; a long value wraps on its own side */
+  .query-sheet .qs-row {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .query-sheet .qs-row > :first-child {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+  .query-sheet .qs-row > :last-child {
+    flex: 0 1 auto;
+    min-width: 0;
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+
+  /* Header bar stays attached to the rows below it */
+  .query-sheet .qs-bar {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  .query-sheet .qs-signatures {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
 }
