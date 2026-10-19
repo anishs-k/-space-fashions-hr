@@ -10,17 +10,21 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Search, Filter, ArrowUpRight, Users, ClipboardList, Plus } from 'lucide-react';
+import { Search, Filter, ArrowUpRight, Users, ClipboardList, Plus, CalendarRange } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { pdfSeedData, seedDatabase } from '@/lib/seed';
 import { NonEmployeeList } from '@/components/nonEmployees/NonEmployeeList';
+import { JoinLeftReport } from '@/components/employees/JoinLeftReport';
+
+type ListTab = 'employees' | 'queries' | 'report';
 
 export function EmployeeList() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = searchParams.get('tab') === 'queries' ? 'queries' : 'employees';
+  const tabParam = searchParams.get('tab');
+  const activeTab: ListTab = tabParam === 'queries' || tabParam === 'report' ? tabParam : 'employees';
 
   const [employees, setEmployees] = React.useState<Employee[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -62,7 +66,7 @@ export function EmployeeList() {
     };
   }, []);
 
-  const handleTabChange = (tab: 'employees' | 'queries') => {
+  const handleTabChange = (tab: ListTab) => {
     setSearchParams({ tab });
   };
 
@@ -94,7 +98,7 @@ export function EmployeeList() {
   return (
     <div className="space-y-6 font-mono">
       {/* Segmented Tab Switcher */}
-      <div className="flex border-b border-[#141414]/15 gap-4">
+      <div className="flex border-b border-[#141414]/15 gap-4 overflow-x-auto whitespace-nowrap print:hidden">
         <button
           onClick={() => handleTabChange('employees')}
           className={`flex items-center gap-2.5 px-4 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-all ${
@@ -118,10 +122,24 @@ export function EmployeeList() {
           <ClipboardList className="w-4 h-4" />
           Non-Employee & Queries (Items 1-31)
         </button>
+
+        <button
+          onClick={() => handleTabChange('report')}
+          className={`flex items-center gap-2.5 px-4 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-all ${
+            activeTab === 'report'
+              ? 'border-[#141414] text-[#141414] bg-[#141414]/5'
+              : 'border-transparent text-[#141414]/50 hover:text-[#141414] hover:bg-[#141414]/5'
+          }`}
+        >
+          <CalendarRange className="w-4 h-4" />
+          Join/Left Report
+        </button>
       </div>
 
       {activeTab === 'queries' ? (
         <NonEmployeeList onConvertToEmployee={handleConvertToEmployee} />
+      ) : activeTab === 'report' ? (
+        <JoinLeftReport employees={employees} loading={loading} />
       ) : (
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row gap-4 items-center justify-between border-b border-[#141414]/10 pb-6">
