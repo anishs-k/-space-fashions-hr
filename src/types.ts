@@ -61,6 +61,7 @@ export interface Employee {
   fatherHusbandName: string;
   dob: string;
   age: number;
+  gender?: 'Male' | 'Female' | '';
   qualification: string;
   technicalQualification: string;
   permanentAddress: string;

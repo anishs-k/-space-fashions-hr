@@ -1,10 +1,11 @@
 import React from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { supabase } from '@/lib/supabase';
 import { NonEmployee, EmployeeCategory } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { DateInput } from '@/components/ui/date-input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { 
@@ -73,7 +74,7 @@ export function NonEmployeeForm({ initialData, onSuccess, onConvertToEmployee }:
     }
   };
 
-  const { register, handleSubmit, watch, setValue, reset, formState: { isSubmitting } } = useForm<NonEmployee>({
+  const { register, handleSubmit, watch, setValue, reset, control, formState: { isSubmitting } } = useForm<NonEmployee>({
     defaultValues: defaultValues as NonEmployee
   });
 
@@ -195,7 +196,7 @@ export function NonEmployeeForm({ initialData, onSuccess, onConvertToEmployee }:
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 max-w-5xl mx-auto pb-12 font-mono">
+    <form onSubmit={handleSubmit(onSubmit)} className="form-readable space-y-8 max-w-5xl mx-auto pb-12 font-mono">
       {/* Top Banner Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#141414]/10 pb-4">
         <div>
@@ -248,8 +249,8 @@ export function NonEmployeeForm({ initialData, onSuccess, onConvertToEmployee }:
         
         <CardContent className="p-6 space-y-6">
           {/* Row 1: Sr, Category, Name */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-            <div className="md:col-span-3 space-y-1">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+            <div className="lg:col-span-3 space-y-1">
               <Label className="text-[11px] opacity-70 font-bold">1. Sr (Serial No)</Label>
               <Input
                 {...register('srNo')}
@@ -258,7 +259,7 @@ export function NonEmployeeForm({ initialData, onSuccess, onConvertToEmployee }:
               />
             </div>
 
-            <div className="md:col-span-3 space-y-1">
+            <div className="lg:col-span-3 space-y-1">
               <Label className="text-[11px] opacity-70 font-bold">2. Category</Label>
               <select
                 {...register('category')}
@@ -270,7 +271,7 @@ export function NonEmployeeForm({ initialData, onSuccess, onConvertToEmployee }:
               </select>
             </div>
 
-            <div className="md:col-span-6 space-y-1">
+            <div className="lg:col-span-6 space-y-1">
               <Label className="text-[11px] opacity-70 font-bold">3. Name *</Label>
               <Input
                 {...register('name', { required: true })}
@@ -281,7 +282,7 @@ export function NonEmployeeForm({ initialData, onSuccess, onConvertToEmployee }:
           </div>
 
           {/* Row 2: Father Name, Contact Number, Alternative Contact */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div className="space-y-1">
               <Label className="text-[11px] opacity-70 font-bold">4. Father Name</Label>
               <Input
@@ -311,7 +312,7 @@ export function NonEmployeeForm({ initialData, onSuccess, onConvertToEmployee }:
           </div>
 
           {/* Row 3: Reference, Post applied for, Date of application */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div className="space-y-1">
               <Label className="text-[11px] opacity-70 font-bold">7. Reference:-</Label>
               <Input
@@ -332,16 +333,23 @@ export function NonEmployeeForm({ initialData, onSuccess, onConvertToEmployee }:
 
             <div className="space-y-1">
               <Label className="text-[11px] opacity-70 font-bold">9. Date of application</Label>
-              <Input
-                type="date"
-                {...register('dateOfApplication')}
-                className="rounded-none border-[#141414]/20 text-xs font-mono"
+              <Controller
+                name="dateOfApplication"
+                control={control}
+                render={({ field }) => (
+                  <DateInput
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    className="rounded-none border-[#141414]/20 text-xs font-mono"
+                  />
+                )}
               />
             </div>
           </div>
 
           {/* Row 4: Qualification, Any special skills, Computer knowledge */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div className="space-y-1">
               <Label className="text-[11px] opacity-70 font-bold">10. Qualification</Label>
               <Input
@@ -371,7 +379,7 @@ export function NonEmployeeForm({ initialData, onSuccess, onConvertToEmployee }:
           </div>
 
           {/* Row 5: Experience, Current salary, Other perks */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div className="space-y-1">
               <Label className="text-[11px] opacity-70 font-bold">13. Experience</Label>
               <Input
@@ -444,13 +452,20 @@ export function NonEmployeeForm({ initialData, onSuccess, onConvertToEmployee }:
 
           <CardContent className="p-6 space-y-6">
             {/* Row 1: Interview date, Interview taken by, Result of interview */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               <div className="space-y-1">
                 <Label className="text-[11px] opacity-70 font-bold">18. Interview date</Label>
-                <Input
-                  type="date"
-                  {...register('interviewDate')}
-                  className="rounded-none border-[#141414]/20 text-xs font-mono"
+                <Controller
+                  name="interviewDate"
+                  control={control}
+                  render={({ field }) => (
+                    <DateInput
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      className="rounded-none border-[#141414]/20 text-xs font-mono"
+                    />
+                  )}
                 />
               </div>
 
@@ -559,7 +574,7 @@ export function NonEmployeeForm({ initialData, onSuccess, onConvertToEmployee }:
 
           <CardContent className="p-6 space-y-6">
             {/* Row 1: 24. Final Salary, 25. ESI, 26. PF */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* 24. Final Salary */}
               <div className="space-y-2 p-3 border border-[#141414]/20 bg-[#141414]/5">
                 <div className="flex justify-between items-baseline">
@@ -587,7 +602,7 @@ export function NonEmployeeForm({ initialData, onSuccess, onConvertToEmployee }:
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <span className="text-[9px] opacity-60">EMP (0.75%)</span>
+                    <span className="field-caption text-[9px] opacity-60">EMP (0.75%)</span>
                     <Input
                       type="number"
                       {...register('salaryDetails.esi', { valueAsNumber: true })}
@@ -595,7 +610,7 @@ export function NonEmployeeForm({ initialData, onSuccess, onConvertToEmployee }:
                     />
                   </div>
                   <div>
-                    <span className="text-[9px] opacity-60">EMPR (3.25%)</span>
+                    <span className="field-caption text-[9px] opacity-60">EMPR (3.25%)</span>
                     <Input
                       type="number"
                       {...register('salaryDetails.esiEmployer', { valueAsNumber: true })}
@@ -604,7 +619,7 @@ export function NonEmployeeForm({ initialData, onSuccess, onConvertToEmployee }:
                   </div>
                 </div>
                 <div className="flex items-center justify-between pt-1">
-                  <span className="text-[9px] opacity-60">Apply ESI:</span>
+                  <span className="field-caption text-[9px] opacity-60">Apply ESI:</span>
                   <select
                     value={applyEsi !== false ? 'true' : 'false'}
                     onChange={(e) => {
@@ -627,7 +642,7 @@ export function NonEmployeeForm({ initialData, onSuccess, onConvertToEmployee }:
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <span className="text-[9px] opacity-60">EMP (12%)</span>
+                    <span className="field-caption text-[9px] opacity-60">EMP (12%)</span>
                     <Input
                       type="number"
                       {...register('salaryDetails.pf', { valueAsNumber: true })}
@@ -635,7 +650,7 @@ export function NonEmployeeForm({ initialData, onSuccess, onConvertToEmployee }:
                     />
                   </div>
                   <div>
-                    <span className="text-[9px] opacity-60">EMPR (12%)</span>
+                    <span className="field-caption text-[9px] opacity-60">EMPR (12%)</span>
                     <Input
                       type="number"
                       {...register('salaryDetails.pfEmployer', { valueAsNumber: true })}
@@ -644,7 +659,7 @@ export function NonEmployeeForm({ initialData, onSuccess, onConvertToEmployee }:
                   </div>
                 </div>
                 <div className="flex items-center justify-between pt-1">
-                  <span className="text-[9px] opacity-60">Apply PF:</span>
+                  <span className="field-caption text-[9px] opacity-60">Apply PF:</span>
                   <select
                     value={applyPf !== false ? 'true' : 'false'}
                     onChange={(e) => {
@@ -661,7 +676,7 @@ export function NonEmployeeForm({ initialData, onSuccess, onConvertToEmployee }:
             </div>
 
             {/* Row 2: 27. Prof tax, 28. Lww, 29. Lwf */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* 27. Prof Tax */}
               <div className="space-y-2 p-3 border border-[#141414]/20 bg-[#141414]/5">
                 <Label className="text-xs font-bold font-mono">27. Prof tax (₹)</Label>
@@ -702,7 +717,7 @@ export function NonEmployeeForm({ initialData, onSuccess, onConvertToEmployee }:
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <span className="text-[9px] opacity-60">EMP (₹5)</span>
+                    <span className="field-caption text-[9px] opacity-60">EMP (₹5)</span>
                     <Input
                       type="number"
                       {...register('salaryDetails.lwf', { valueAsNumber: true })}
@@ -710,7 +725,7 @@ export function NonEmployeeForm({ initialData, onSuccess, onConvertToEmployee }:
                     />
                   </div>
                   <div>
-                    <span className="text-[9px] opacity-60">EMPR (₹20)</span>
+                    <span className="field-caption text-[9px] opacity-60">EMPR (₹20)</span>
                     <Input
                       type="number"
                       {...register('salaryDetails.lwfEmployer', { valueAsNumber: true })}
@@ -719,7 +734,7 @@ export function NonEmployeeForm({ initialData, onSuccess, onConvertToEmployee }:
                   </div>
                 </div>
                 <div className="flex items-center justify-between pt-1">
-                  <span className="text-[9px] opacity-60">Apply LWF:</span>
+                  <span className="field-caption text-[9px] opacity-60">Apply LWF:</span>
                   <select
                     value={applyLwf !== false ? 'true' : 'false'}
                     onChange={(e) => {

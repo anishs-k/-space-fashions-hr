@@ -5,6 +5,8 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
 /**
  * Normalizes a date string from various formats to YYYY-MM-DD (ISO format)
  * which is required by HTML <input type="date">.
@@ -44,6 +46,17 @@ export function normalizeDate(raw: any): string {
   if (slashMatch) {
     const [, d, m, y] = slashMatch.map(Number);
     if (y > 1900 && m >= 1 && m <= 12 && d >= 1 && d <= 31) {
+      return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    }
+  }
+
+  // DD/Mon/YYYY, DD-Mon-YYYY or DD Mon YYYY (DOB display format, e.g. 19/Jun/2012)
+  const monthNameMatch = str.match(/^(\d{1,2})[\/\- ]([a-z]{3,})[\/\- ](\d{4})$/i);
+  if (monthNameMatch) {
+    const d = Number(monthNameMatch[1]);
+    const m = MONTH_NAMES.findIndex(name => name.toLowerCase() === monthNameMatch[2].slice(0, 3).toLowerCase()) + 1;
+    const y = Number(monthNameMatch[3]);
+    if (y > 1900 && m >= 1 && d >= 1 && d <= 31) {
       return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     }
   }
@@ -205,19 +218,22 @@ export function calculatePayableDutyHours(
 }
 
 /**
- * Formats a date string for human-readable display (DD:MM:YYYY).
+ * Formats any date in the app's single display format: DD/Mon/YYYY (e.g. 19/Jun/2012).
  * Accepts any format that normalizeDate() can handle.
- * Returns original string if it can't be parsed.
+ * Returns '' for empty values and the original string if it can't be parsed.
+ */
+export function formatDateValue(raw: any): string {
+  const iso = normalizeDate(raw);
+  if (!iso) return String(raw ?? '').trim();
+
+  const [y, m, d] = iso.split('-');
+  return `${d}/${MONTH_NAMES[Number(m) - 1]}/${y}`;
+}
+
+/**
+ * Same as formatDateValue(), but shows 'N/A' for empty values (for print layouts).
  */
 export function formatDateDisplay(raw: any): string {
   if (!raw || raw === 'N/A') return 'N/A';
-
-  const iso = normalizeDate(raw);
-  if (!iso) {
-    // If normalize failed but we have a raw string, return it as-is
-    return String(raw).trim() || 'N/A';
-  }
-
-  const [y, m, d] = iso.split('-');
-  return `${d}:${m}:${y}`;
+  return formatDateValue(raw) || 'N/A';
 }

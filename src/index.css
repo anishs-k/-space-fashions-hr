@@ -135,6 +135,48 @@
     @apply font-sans;
     }
 }
+/* ---------- Readable form text (Employee Registration & Non-Employee forms) ---------- */
+/* Left unlayered on purpose: unlayered CSS beats Tailwind's @layer utilities, so this
+   overrides the per-field size classes (text-[8px], text-[10px], text-xs, md:text-sm …). */
+.form-readable label,
+.form-readable .field-caption,
+.form-readable input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+.form-readable select,
+.form-readable textarea {
+  font-size: 1rem; /* 16px */
+  line-height: 1.4;
+}
+
+.form-readable label,
+.form-readable .field-caption {
+  font-weight: 600;
+}
+
+/* Faded labels (opacity-40/50/70) were hard to read; keep the hierarchy but lift contrast. */
+.form-readable label[class*="opacity-"],
+.form-readable .field-caption[class*="opacity-"] {
+  opacity: 0.8;
+}
+
+.form-readable input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+.form-readable select,
+.form-readable textarea {
+  font-weight: 500;
+}
+
+/* Fixed h-8 / h-9 heights would clip 16px text. */
+.form-readable input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+.form-readable select {
+  height: auto;
+  min-height: 2.5rem;
+}
+
+.form-readable input::placeholder,
+.form-readable textarea::placeholder {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
 /* ---------- Print (A4) ---------- */
 @media print {
   /* Zero page margin hides the browser's URL / title / date header & footer;

@@ -5,6 +5,7 @@ import { Employee, EmployeeStatus } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { DateInput } from '@/components/ui/date-input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -268,7 +269,7 @@ export function EmployeeForm({ initialData }: { initialData?: Partial<Employee> 
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="max-w-6xl mx-auto space-y-8">
       <div className="border-b border-[#141414]/10 pb-6 flex items-center justify-between">
         <div className="flex gap-4">
           <select 
@@ -294,9 +295,9 @@ export function EmployeeForm({ initialData }: { initialData?: Partial<Employee> 
         </Button>
       </div>
 
-      <form id="employee-form" onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-6">
+      <form id="employee-form" onSubmit={handleSubmit(onSubmit, onInvalid)} className="form-readable space-y-6">
         <input type="hidden" {...register('id')} />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           {/* Identity */}
           <Section label="IDENTITY_METRICS" icon={User}>
             <div className="space-y-4">
@@ -322,20 +323,39 @@ export function EmployeeForm({ initialData }: { initialData?: Partial<Employee> 
                 <Label className="font-mono text-[10px] opacity-50">FULL_NAME</Label>
                 <Input {...register('name', { required: true })} className="rounded-none font-mono text-xs border-[#141414]/20" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,0.8fr)_minmax(0,1fr)] gap-4">
                 <div>
                   <Label className="font-mono text-[10px] opacity-50">DATE_OF_BIRTH</Label>
-                  <Input
-                    type="date"
-                    {...register('dob', {
-                      onChange: (e) => setValue('age', calculateAge(e.target.value), { shouldDirty: true })
-                    })}
-                    className="rounded-none font-mono text-xs border-[#141414]/20"
+                  <Controller
+                    name="dob"
+                    control={control}
+                    render={({ field }) => (
+                      <DateInput
+                        value={field.value}
+                        onChange={(iso) => {
+                          field.onChange(iso);
+                          setValue('age', calculateAge(iso), { shouldDirty: true });
+                        }}
+                        onBlur={field.onBlur}
+                        className="rounded-none font-mono text-xs border-[#141414]/20"
+                      />
+                    )}
                   />
                 </div>
                 <div>
                   <Label className="font-mono text-[10px] opacity-50">AGE</Label>
                   <Input type="number" {...register('age', { valueAsNumber: true })} className="rounded-none font-mono text-xs border-[#141414]/20" />
+                </div>
+                <div>
+                  <Label className="font-mono text-[10px] opacity-50">GENDER</Label>
+                  <select
+                    {...register('gender')}
+                    className="w-full h-9 rounded-none bg-transparent border border-[#141414]/20 font-mono text-xs px-3 focus:outline-none focus:ring-1 focus:ring-[#141414]"
+                  >
+                    <option value="">SELECT_GENDER</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                  </select>
                 </div>
               </div>
               <div>
@@ -377,38 +397,52 @@ export function EmployeeForm({ initialData }: { initialData?: Partial<Employee> 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="font-mono text-[10px] opacity-50">JOINING_DATE</Label>
-                  <Input
-                    type="date"
-                    {...register('dateOfJoining', {
-                      // Re-check the leaving date whenever the joining date changes
-                      onChange: () => {
-                        if (getValues('dateOfLeaving')) trigger('dateOfLeaving');
-                      }
-                    })}
-                    className="rounded-none font-mono text-xs border-[#141414]/20"
+                  <Controller
+                    name="dateOfJoining"
+                    control={control}
+                    render={({ field }) => (
+                      <DateInput
+                        value={field.value}
+                        onChange={(iso) => {
+                          field.onChange(iso);
+                          // Re-check the leaving date whenever the joining date changes
+                          if (getValues('dateOfLeaving')) trigger('dateOfLeaving');
+                        }}
+                        onBlur={field.onBlur}
+                        className="rounded-none font-mono text-xs border-[#141414]/20"
+                      />
+                    )}
                   />
                 </div>
                 <div>
                   <Label className="font-mono text-[10px] opacity-50">LEAVING_DATE</Label>
-                  <Input
-                    type="date"
-                    min={dateOfJoining || undefined}
-                    {...register('dateOfLeaving', {
+                  <Controller
+                    name="dateOfLeaving"
+                    control={control}
+                    rules={{
                       validate: (value) => {
                         const joining = getValues('dateOfJoining');
                         // ISO YYYY-MM-DD strings compare correctly as text
                         return !value || !joining || value >= joining || 'Invalid Date';
-                      },
-                      onChange: (e) => {
-                        // Leaving date marks the employee as having left
-                        if (e.target.value) {
-                          setValue('status', 'inactive', { shouldDirty: true });
-                        }
-                        trigger('dateOfLeaving');
                       }
-                    })}
-                    aria-invalid={!!errors.dateOfLeaving}
-                    className={`rounded-none font-mono text-xs ${errors.dateOfLeaving ? 'border-red-600' : 'border-[#141414]/20'}`}
+                    }}
+                    render={({ field }) => (
+                      <DateInput
+                        value={field.value}
+                        min={dateOfJoining || undefined}
+                        onChange={(iso) => {
+                          field.onChange(iso);
+                          // Leaving date marks the employee as having left
+                          if (iso) {
+                            setValue('status', 'inactive', { shouldDirty: true });
+                          }
+                          trigger('dateOfLeaving');
+                        }}
+                        onBlur={field.onBlur}
+                        aria-invalid={!!errors.dateOfLeaving}
+                        className={`rounded-none font-mono text-xs ${errors.dateOfLeaving ? 'border-red-600' : 'border-[#141414]/20'}`}
+                      />
+                    )}
                   />
                   {errors.dateOfLeaving && (
                     <p className="font-mono text-[10px] font-bold text-red-600 mt-1">
@@ -428,15 +462,15 @@ export function EmployeeForm({ initialData }: { initialData?: Partial<Employee> 
           <Section label="LANGUAGES_PROFICIENCY" icon={LanguagesIcon}>
             <div className="space-y-4">
               <div className="grid grid-cols-4 gap-2 border-b border-[#141414]/10 pb-1 mb-2">
-                <div className="font-mono text-[10px] opacity-40">LANGUAGE</div>
-                <div className="font-mono text-[10px] opacity-40 text-center">READ</div>
-                <div className="font-mono text-[10px] opacity-40 text-center">WRITE</div>
-                <div className="font-mono text-[10px] opacity-40 text-center">SPEAK</div>
+                <div className="field-caption font-mono text-[10px] opacity-40">LANGUAGE</div>
+                <div className="field-caption font-mono text-[10px] opacity-40 text-center">READ</div>
+                <div className="field-caption font-mono text-[10px] opacity-40 text-center">WRITE</div>
+                <div className="field-caption font-mono text-[10px] opacity-40 text-center">SPEAK</div>
               </div>
 
               {['hindi', 'english', 'punjabi'].map((lang) => (
                 <div key={lang} className="grid grid-cols-4 gap-2 items-center">
-                  <div className="font-mono text-xs uppercase">{lang}</div>
+                  <div className="field-caption font-mono text-xs uppercase">{lang}</div>
                   <div className="flex justify-center">
                     <input type="checkbox" {...register(`languages.${lang}.read` as any)} className="w-4 h-4 rounded-none border-[#141414]/20 accent-[#141414]" />
                   </div>
@@ -612,18 +646,26 @@ export function EmployeeForm({ initialData }: { initialData?: Partial<Employee> 
                     <Input {...register('nominee.relation')} className="rounded-none font-mono text-[10px] h-8 border-[#141414]/20" />
                   </div>
                   <div>
-                    <Label className="font-mono text-[8px] opacity-40">AGE</Label>
-                    <Input type="number" {...register('nominee.age', { valueAsNumber: true })} className="rounded-none font-mono text-[10px] h-8 border-[#141414]/20" />
+                    <Label className="font-mono text-[8px] opacity-40">DOB</Label>
+                    <Controller
+                      name="nominee.dob"
+                      control={control}
+                      render={({ field }) => (
+                        <DateInput
+                          value={field.value}
+                          onChange={(iso) => {
+                            field.onChange(iso);
+                            setValue('nominee.age', calculateAge(iso), { shouldDirty: true });
+                          }}
+                          onBlur={field.onBlur}
+                          className="rounded-none font-mono text-[10px] h-8 border-[#141414]/20"
+                        />
+                      )}
+                    />
                   </div>
                   <div>
-                    <Label className="font-mono text-[8px] opacity-40">DOB</Label>
-                    <Input
-                      type="date"
-                      {...register('nominee.dob', {
-                        onChange: (e) => setValue('nominee.age', calculateAge(e.target.value), { shouldDirty: true })
-                      })}
-                      className="rounded-none font-mono text-[10px] h-8 border-[#141414]/20"
-                    />
+                    <Label className="font-mono text-[8px] opacity-40">AGE</Label>
+                    <Input type="number" {...register('nominee.age', { valueAsNumber: true })} className="rounded-none font-mono text-[10px] h-8 border-[#141414]/20" />
                   </div>
                 </div>
               </div>
@@ -669,18 +711,26 @@ export function EmployeeForm({ initialData }: { initialData?: Partial<Employee> 
                       
                       <div className="grid grid-cols-3 gap-2">
                         <div>
-                          <Label className="font-mono text-[8px] opacity-40 uppercase">AGE</Label>
-                          <Input type="number" {...register(`family.${index}.age` as const, { valueAsNumber: true })} className="rounded-none font-mono text-[10px] h-8 border-[#141414]/20 bg-white/50" />
+                          <Label className="font-mono text-[8px] opacity-40 uppercase">DOB</Label>
+                          <Controller
+                            name={`family.${index}.dob` as const}
+                            control={control}
+                            render={({ field }) => (
+                              <DateInput
+                                value={field.value}
+                                onChange={(iso) => {
+                                  field.onChange(iso);
+                                  setValue(`family.${index}.age` as const, calculateAge(iso), { shouldDirty: true });
+                                }}
+                                onBlur={field.onBlur}
+                                className="rounded-none font-mono text-[10px] h-8 border-[#141414]/20 bg-white/50"
+                              />
+                            )}
+                          />
                         </div>
                         <div>
-                          <Label className="font-mono text-[8px] opacity-40 uppercase">DOB</Label>
-                          <Input
-                            type="date"
-                            {...register(`family.${index}.dob` as const, {
-                              onChange: (e) => setValue(`family.${index}.age` as const, calculateAge(e.target.value), { shouldDirty: true })
-                            })}
-                            className="rounded-none font-mono text-[10px] h-8 border-[#141414]/20 bg-white/50"
-                          />
+                          <Label className="font-mono text-[8px] opacity-40 uppercase">AGE</Label>
+                          <Input type="number" {...register(`family.${index}.age` as const, { valueAsNumber: true })} className="rounded-none font-mono text-[10px] h-8 border-[#141414]/20 bg-white/50" />
                         </div>
                         <div>
                           <Label className="font-mono text-[8px] opacity-40 uppercase">MOBILE_NO</Label>
@@ -695,7 +745,7 @@ export function EmployeeForm({ initialData }: { initialData?: Partial<Employee> 
           </Section>
 
           {/* Office Use Only */}
-          <div className="md:col-span-2 flex justify-end">
+          <div className="xl:col-span-2 flex justify-end">
             <Button
               type="button"
               variant="outline"
